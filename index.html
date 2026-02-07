@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Arquitecto de Sentidos</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #f0f0f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+            color: #333;
+            z-index: 10;
+        }
+
+        h1 {
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 1.2rem;
+            margin: 0;
+            opacity: 0.8;
+        }
+
+        .instruction {
+            font-size: 0.8rem;
+            margin-top: 5px;
+            opacity: 0.5;
+        }
+
+        #level-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #fff;
+            border-color: #333;
+        }
+
+        #win-message {
+            position: absolute;
+            bottom: 80px;
+            width: 100%;
+            text-align: center;
+            font-size: 1.2rem;
+            color: #d4af37;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            pointer-events: none;
+            display: none;
+            animation: fadeIn 1s forwards;
+        }
+
+        #level-ui {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            pointer-events: auto;
+        }
+
+        #slider-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        input[type="range"] {
+            width: 200px;
+            cursor: pointer;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="ui-overlay">
+        <h1 id="level-title">El Arquitecto de Sentidos</h1>
+        <div class="instruction" id="level-instruction">Rota para encontrar la conexión</div>
+    </div>
+
+    <div id="level-ui">
+        <div id="slider-container">
+            <div style="font-size: 0.7rem; margin-bottom: 5px; text-transform: uppercase; opacity: 0.6;">Denotación ->
+                Connotación</div>
+            <input type="range" id="myth-slider" min="0" max="100" value="0">
+            <div id="myth-label" style="margin-top: 5px; font-weight: bold;">SOLDADO</div>
+        </div>
+    </div>
+
+    <div id="level-controls">
+        <button onclick="gameInstance.loadLevel('saussure')">Saussure</button>
+        <button onclick="gameInstance.loadLevel('peirce')">Peirce</button>
+        <button onclick="gameInstance.loadLevel('barthes')">Barthes</button>
+        <button onclick="gameInstance.loadLevel('baudrillard')">Baudrillard</button>
+    </div>
+
+    <div id="win-message"></div>
+    <div id="canvas-container"></div>
+
+    <!-- Three.js from CDN -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        class Game {
+            constructor() {
+                this.container = document.getElementById('canvas-container');
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0xf0f0f0);
+                this.scene.fog = new THREE.Fog(0xf0f0f0, 10, 50);
+
+                this.initCamera();
+                this.initRenderer();
+                this.initLights();
+                this.initGrid();
+                this.initControls();
+
+                this.levels = {};
+                this.currentLevel = null;
+                this.levelGroup = null;
+
+                window.addEventListener('resize', () => this.onWindowResize());
+                this.animate();
+            }
+
+            initCamera() {
+                this.camera = new THREE.PerspectiveCamera(
+                    45,
+                    window.innerWidth / window.innerHeight,
+                    0.1,
+                    1000
+                );
+                this.camera.position.set(8, 8, 8);
+                this.camera.lookAt(0, 0, 0);
+            }
+
+            initRenderer() {
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(window.devicePixelRatio);
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                this.container.appendChild(this.renderer.domElement);
+            }
+
+            initLights() {
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+                this.scene.add(ambientLight);
+
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(10, 20, 10);
+                directionalLight.castShadow = true;
+
+                // Shadow styling
+                directionalLight.shadow.mapSize.width = 2048;
+                directionalLight.shadow.mapSize.height = 2048;
+                directionalLight.shadow.camera.near = 0.5;
+                directionalLight.shadow.camera.far = 50;
+                directionalLight.shadow.camera.left = -20;
+                directionalLight.shadow.camera.right = 20;
+                directionalLight.shadow.camera.top = 20;
+                directionalLight.shadow.camera.bottom = -20;
+
+                this.scene.add(directionalLight);
+            }
+
+            initGrid() {
+                // Grid helper for the mathematical feel
+                const grid = new THREE.GridHelper(100, 100, 0xcccccc, 0xeeeeee);
+                grid.position.y = -0.01; // Slightly below floor
+                this.scene.add(grid);
+
+                // Invisible floor to catch shadows
+                const floorGeometry = new THREE.PlaneGeometry(200, 200);
+                const floorMaterial = new THREE.ShadowMaterial({ opacity: 0.1 });
+                const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+                floor.rotation.x = -Math.PI / 2;
+                floor.receiveShadow = true;
+                this.scene.add(floor);
+            }
+
+            initControls() {
+                this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                this.controls.minDistance = 5;
+                this.controls.maxDistance = 50;
+            }
+
+            onWindowResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            addLevel(name, levelFn) {
+                this.levels[name] = levelFn;
+            }
+
+            loadLevel(name) {
+                // Clear state
+                if (this.currentLevelObject) {
+                    this.scene.remove(this.currentLevelObject);
+                }
+
+                // Hide specific UI
+                document.getElementById('slider-container').style.display = 'none';
+                document.getElementById('win-message').style.display = 'none';
+
+                // Reset instruction
+                const titles = {
+                    'saussure': 'La Diada de Saussure',
+                    'peirce': 'El Prisma de Peirce',
+                    'barthes': 'El Escáner de Barthes',
+                    'baudrillard': 'El Desierto de lo Real'
+                };
+                const instructions = {
+                    'saussure': 'Rota la mitad roja para encontrar la conexión',
+                    'peirce': 'Usa las flechas para mover el Interpretante (Prisma)',
+                    'barthes': 'Usa el deslizador para ver el mito oculto',
+                    'baudrillard': 'Acércate al edificio en el horizonte'
+                };
+
+                document.getElementById('level-title').innerText = titles[name] || 'El Arquitecto de Sentidos';
+                document.getElementById('level-instruction').innerText = instructions[name] || '';
+
+                this.currentLevelObject = new THREE.Group();
+                this.scene.add(this.currentLevelObject);
+
+                if (this.levels[name]) {
+                    this.levels[name](this.currentLevelObject);
+                }
+            }
+
+            showWin(text) {
+                const win = document.getElementById('win-message');
+                win.innerHTML = text;
+                win.style.display = 'block';
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                this.controls.update();
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        // Initialize Game
+        const game = new Game();
+
+        // Level Definition Examples
+        game.addLevel('base', (group) => {
+            // Placeholder: A simple floating cube to test shadows and perspective
+            const geometry = new THREE.BoxGeometry(2, 2, 2);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0xffffff,
+                flatShading: true
+            });
+            const cube = new THREE.Mesh(geometry, material);
+            cube.position.y = 1.5;
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            group.add(cube);
+        });
+
+        // Level 1: Saussure (The Floating Diad)
+        game.addLevel('saussure', (group) => {
+            const container = new THREE.Group();
+            group.add(container);
+
+            // Common materials
+            const redMat = new THREE.MeshPhongMaterial({ color: 0xff4444, flatShading: true });
+            const blueMat = new THREE.MeshPhongMaterial({ color: 0x4444ff, flatShading: true });
+            const whiteMat = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true });
+            const goldMat = new THREE.MeshPhongMaterial({ color: 0xffd700, emissive: 0xffaa00, emissiveIntensity: 0.5 });
+
+            // Semicircle geometries
+            const semiGeo = new THREE.CylinderGeometry(2, 2, 0.5, 32, 1, false, 0, Math.PI);
+
+            // Half 1: Signifier (Red + Text)
+            const half1 = new THREE.Group();
+            const coin1 = new THREE.Mesh(semiGeo, redMat);
+            coin1.rotation.x = Math.PI / 2;
+            coin1.castShadow = true;
+            half1.add(coin1);
+
+            // Simple "ARBOL" label using a sprite for simplicity (avoids FontLoader overhead for now)
+            const createTextSprite = (text) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 256;
+                canvas.height = 64;
+                ctx.fillStyle = 'white';
+                ctx.font = 'Bold 40px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(text, 128, 45);
+                const texture = new THREE.CanvasTexture(canvas);
+                const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+                const sprite = new THREE.Sprite(spriteMaterial);
+                sprite.scale.set(3, 0.75, 1);
+                return sprite;
+            };
+
+            const label = createTextSprite('ARBOL');
+            label.position.set(0, 1.2, 0.5);
+            half1.add(label);
+            half1.position.x = -0.1;
+
+            // Half 2: Signified (Blue + Low-poly Tree)
+            const half2 = new THREE.Group();
+            const coin2 = new THREE.Mesh(semiGeo, blueMat);
+            coin2.rotation.x = Math.PI / 2;
+            coin2.rotation.z = Math.PI; // Flip it
+            coin2.castShadow = true;
+            half2.add(coin2);
+
+            // Low-poly Tree
+            const trunkGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.5);
+            const trunk = new THREE.Mesh(trunkGeo, new THREE.MeshPhongMaterial({ color: 0x8b4513 }));
+            trunk.position.set(0, -1, 0.5);
+            trunk.rotation.x = Math.PI / 2;
+            half2.add(trunk);
+
+            const leavesGeo = new THREE.ConeGeometry(0.5, 1, 8);
+            const leaves = new THREE.Mesh(leavesGeo, new THREE.MeshPhongMaterial({ color: 0x228b22 }));
+            leaves.position.set(0, -1.6, 0.5);
+            leaves.rotation.x = Math.PI / 2;
+            half2.add(leaves);
+            half2.position.x = 0.1;
+
+            container.add(half1);
+            container.add(half2);
+
+            // Interaction State
+            let isDragging = false;
+            let targetRotation = Math.random() * Math.PI * 2;
+            half1.rotation.z = targetRotation;
+            half2.rotation.z = Math.random() * Math.PI * 2;
+
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+
+            const onMouseDown = (event) => {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, game.camera);
+                const intersects = raycaster.intersectObjects([half1], true);
+                if (intersects.length > 0) {
+                    isDragging = true;
+                    game.controls.enabled = false;
+                }
+            };
+
+            const onMouseMove = (event) => {
+                if (!isDragging) return;
+                const deltaX = event.movementX * 0.01;
+                half1.rotation.z += deltaX;
+            };
+
+            const onMouseUp = () => {
+                if (isDragging) {
+                    isDragging = false;
+                    game.controls.enabled = true;
+                    checkWin();
+                }
+            };
+
+            const checkWin = () => {
+                // Check if rotation difference is small (accounting for wrap-around)
+                const diff = Math.abs((half1.rotation.z % (Math.PI * 2)) - (half2.rotation.z % (Math.PI * 2)));
+                const threshold = 0.2;
+
+                if (diff < threshold || Math.abs(diff - Math.PI * 2) < threshold) {
+                    // Snap and Glow
+                    half1.rotation.z = half2.rotation.z;
+                    coin1.material = goldMat;
+                    coin2.material = goldMat;
+
+                    game.showWin('Signo Consolidado: La relación es arbitraria pero necesaria');
+
+                    // Remove listeners
+                    window.removeEventListener('mousedown', onMouseDown);
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                }
+            };
+
+            window.addEventListener('mousedown', onMouseDown);
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        });
+
+        // Level 2: Peirce (The Triangle of Light)
+        game.addLevel('peirce', (group) => {
+            const container = new THREE.Group();
+            group.add(container);
+
+            // 1. Rock (Object) - Node A
+            const rockGeo = new THREE.IcosahedronGeometry(1, 0);
+            const rockMat = new THREE.MeshPhongMaterial({ color: 0x888888, flatShading: true });
+            const rock = new THREE.Mesh(rockGeo, rockMat);
+            rock.position.set(-6, 1.5, -4);
+            rock.castShadow = true;
+            container.add(rock);
+
+            // 2. Photo (Representamen) - Node B
+            const photoGeo = new THREE.PlaneGeometry(2, 2);
+            const photoMat = new THREE.MeshPhongMaterial({ color: 0xcccccc, side: THREE.DoubleSide });
+            const photo = new THREE.Mesh(photoGeo, photoMat);
+            photo.position.set(6, 1.5, -4);
+            photo.rotation.y = -Math.PI / 4;
+            photo.receiveShadow = true;
+            container.add(photo);
+
+            // 3. Interpretant (Prisma) - Controlled by user
+            const prismaGeo = new THREE.ConeGeometry(0.8, 1.5, 4);
+            const prismaMat = new THREE.MeshPhongMaterial({
+                color: 0x00ffff,
+                transparent: true,
+                opacity: 0.6,
+                emissive: 0x00ffff,
+                emissiveIntensity: 0.2
+            });
+            const prisma = new THREE.Mesh(prismaGeo, prismaMat);
+            prisma.position.set(0, 1.5, 4);
+            prisma.castShadow = true;
+            container.add(prisma);
+
+            // Lasers
+            const laserMat = new THREE.LineBasicMaterial({ color: 0xff0000 });
+
+            // Beam 1: Object -> Interpretant (starts faulty)
+            const beam1Points = [rock.position.clone(), prisma.position.clone()];
+            const beam1Geo = new THREE.BufferGeometry().setFromPoints(beam1Points);
+            const beam1 = new THREE.Line(beam1Geo, laserMat);
+            container.add(beam1);
+
+            // Beam 2: Interpretant -> Representamen (initially empty)
+            const beam2Geo = new THREE.BufferGeometry().setFromPoints([prisma.position.clone(), prisma.position.clone()]);
+            const beam2 = new THREE.Line(beam2Geo, laserMat);
+            container.add(beam2);
+
+            let won = false;
+
+            const onKeyDown = (event) => {
+                if (won) return;
+                const speed = 0.5;
+                switch (event.key) {
+                    case 'ArrowUp': prisma.position.z -= speed; break;
+                    case 'ArrowDown': prisma.position.z += speed; break;
+                    case 'ArrowLeft': prisma.position.x -= speed; break;
+                    case 'ArrowRight': prisma.position.x += speed; break;
+                }
+                updateLasers();
+            };
+
+            const updateLasers = () => {
+                // Update beam 1 target
+                const positions1 = beam1.geometry.attributes.position.array;
+                positions1[3] = prisma.position.x;
+                positions1[4] = prisma.position.y;
+                positions1[5] = prisma.position.z;
+                beam1.geometry.attributes.position.needsUpdate = true;
+
+                // Check distance to "sweet spot" (Triangle center-ish)
+                const targetX = 0;
+                const targetZ = -4;
+                const dist = Math.sqrt(Math.pow(prisma.position.x - targetX, 2) + Math.pow(prisma.position.z - targetZ, 2));
+
+                if (dist < 1) {
+                    // Success: Connect to Representamen
+                    const positions2 = beam2.geometry.attributes.position.array;
+                    positions2[0] = prisma.position.x;
+                    positions2[1] = prisma.position.y;
+                    positions2[2] = prisma.position.z;
+                    positions2[3] = photo.position.x;
+                    positions2[4] = photo.position.y;
+                    positions2[5] = photo.position.z;
+                    beam2.geometry.attributes.position.needsUpdate = true;
+
+                    laserMat.color.set(0x00ff00);
+
+                    if (!won) {
+                        won = true;
+                        game.showWin('Semiosis Ilimitada Activada');
+                        window.removeEventListener('keydown', onKeyDown);
+                    }
+                } else {
+                    // Reset beam 2
+                    const positions2 = beam2.geometry.attributes.position.array;
+                    positions2[0] = prisma.position.x;
+                    positions2[1] = prisma.position.y;
+                    positions2[2] = prisma.position.z;
+                    positions2[3] = prisma.position.x;
+                    positions2[4] = prisma.position.y;
+                    positions2[5] = prisma.position.z;
+                    beam2.geometry.attributes.position.needsUpdate = true;
+                    laserMat.color.set(0xff0000);
+                }
+            };
+
+            window.addEventListener('keydown', onKeyDown);
+            updateLasers(); // Initial call
+        });
+
+        // Level 3: Barthes (Myths and Layers)
+        game.addLevel('barthes', (group) => {
+            const container = new THREE.Group();
+            group.add(container);
+
+            // Soldier figurine (Low-poly)
+            const soldierGroup = new THREE.Group();
+
+            // Base/Legs
+            const legsGeo = new THREE.BoxGeometry(0.8, 1, 0.5);
+            const uniformMat = new THREE.MeshPhongMaterial({ color: 0x4B5320 }); // Olive Drab
+            const legs = new THREE.Mesh(legsGeo, uniformMat);
+            legs.position.y = 0.5;
+            legs.castShadow = true;
+            soldierGroup.add(legs);
+
+            // Torso
+            const torsoGeo = new THREE.BoxGeometry(1, 1.2, 0.6);
+            const torso = new THREE.Mesh(torsoGeo, uniformMat);
+            torso.position.y = 1.6;
+            torso.castShadow = true;
+            soldierGroup.add(torso);
+
+            // Head (Helmet)
+            const headGeo = new THREE.SphereGeometry(0.4, 8, 8);
+            const head = new THREE.Mesh(headGeo, uniformMat);
+            head.position.y = 2.4;
+            head.castShadow = true;
+            soldierGroup.add(head);
+
+            // Rifle
+            const rifleGeo = new THREE.BoxGeometry(0.2, 0.2, 1.5);
+            const rifleMat = new THREE.MeshPhongMaterial({ color: 0x333333 });
+            const rifle = new THREE.Mesh(rifleGeo, rifleMat);
+            rifle.position.set(0.6, 1.8, 0.5);
+            rifle.castShadow = true;
+            soldierGroup.add(rifle);
+
+            soldierGroup.position.y = 0;
+            container.add(soldierGroup);
+
+            // Slider Logic
+            const sliderContainer = document.getElementById('slider-container');
+            const slider = document.getElementById('myth-slider');
+            const label = document.getElementById('myth-label');
+
+            sliderContainer.style.display = 'block';
+            slider.value = 0;
+            label.innerText = 'SOLDADO';
+            label.style.color = '#333';
+
+            const goldMat = new THREE.MeshPhongMaterial({
+                color: 0xffd700,
+                emissive: 0xffaa00,
+                emissiveIntensity: 0,
+                shininess: 100
+            });
+
+            const onSliderInput = () => {
+                const val = slider.value / 100;
+
+                // Interpolate colors and effects
+                uniformMat.emissiveIntensity = val * 0.5;
+                uniformMat.color.lerpColors(new THREE.Color(0x4B5320), new THREE.Color(0xffd700), val);
+
+                if (val > 0.8) {
+                    label.innerText = 'HÉROE / NACIONALISMO';
+                    label.style.color = '#d4af37';
+                } else {
+                    label.innerText = 'SOLDADO';
+                    label.style.color = '#333';
+                }
+
+                if (val >= 0.99) {
+                    game.showWin('Mito Consolidado: El lenguaje robado');
+                }
+            };
+
+            slider.addEventListener('input', onSliderInput);
+
+            // Cleanup function for when level changes
+            const originalLoad = game.loadLevel;
+            game.loadLevel = (name) => {
+                slider.removeEventListener('input', onSliderInput);
+                game.loadLevel = originalLoad;
+                game.loadLevel(name);
+            };
+        });
+
+        // Level 4: Baudrillard (Simulacra and Simulation)
+        game.addLevel('baudrillard', (group) => {
+            const container = new THREE.Group();
+            group.add(container);
+
+            // 1. Terrain
+            // Create a procedural "satellite map" texture
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            for (let i = 0; i < 100; i++) {
+                ctx.fillStyle = `rgb(${100 + Math.random() * 50}, ${120 + Math.random() * 50}, ${80 + Math.random() * 50})`;
+                ctx.fillRect(Math.random() * 512, Math.random() * 512, 50, 50);
+            }
+            const mapTex = new THREE.CanvasTexture(canvas);
+            mapTex.magFilter = THREE.NearestFilter; // Sharp pixels
+
+            const terrainGeo = new THREE.PlaneGeometry(100, 100, 50, 50);
+            const terrainMat = new THREE.MeshPhongMaterial({ map: mapTex });
+            const terrain = new THREE.Mesh(terrainGeo, terrainMat);
+            terrain.rotation.x = -Math.PI / 2;
+            terrain.receiveShadow = true;
+            container.add(terrain);
+
+            // 2. The Simulacrum (Building in the distance)
+            const buildingGeo = new THREE.BoxGeometry(4, 10, 4);
+            const buildingMat = new THREE.MeshPhongMaterial({ color: 0x999999, wireframe: false });
+            const building = new THREE.Mesh(buildingGeo, buildingMat);
+            building.position.set(0, 5, -30);
+            building.castShadow = true;
+            container.add(building);
+
+            // Monitor distance in the animation loop (local update)
+            const update = () => {
+                if (game.currentLevelObject !== group) return;
+
+                const dist = game.camera.position.distanceTo(building.position);
+
+                // Degradation logic
+                if (dist < 15) {
+                    buildingMat.wireframe = true;
+                    mapTex.magFilter = THREE.NearestFilter;
+                    mapTex.needsUpdate = true;
+
+                    if (dist < 10) {
+                        building.visible = (Math.random() > 0.1); // Glitch effect
+                    }
+                } else {
+                    buildingMat.wireframe = false;
+                    building.visible = true;
+                }
+
+                if (dist < 8) {
+                    game.showWin('Bienvenido al desierto de lo real. El simulacro es verdad.');
+                }
+
+                requestAnimationFrame(update);
+            };
+
+            update();
+        });
+
+        // Add to global scope
+        window.gameInstance = game;
+
+        // Start with Saussure
+        game.loadLevel('saussure');
+
+    </script>
+</body>
+
+</html>
