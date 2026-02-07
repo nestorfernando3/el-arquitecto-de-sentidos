@@ -4,17 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>El Arquitecto de Sentidos</title>
+    <title>The Archivist</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-color: #000;
+            background-color: #050505;
             font-family: 'Courier New', Courier, monospace;
-            color: #ccc;
+            color: #dcdcdc;
             user-select: none;
-            cursor: none;
         }
 
         #canvas-container {
@@ -23,157 +22,157 @@
             left: 0;
             width: 100%;
             height: 100%;
-            opacity: 0;
-            /* Starts hidden for intro */
-            transition: opacity 2s;
         }
 
-        /* Intro / Narrative Overlay */
-        #narrative-overlay {
+        /* UI Overlay */
+        #ui-layer {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #header {
+            text-align: left;
+            opacity: 0.7;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            margin: 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-bottom: 1px solid #555;
+            display: inline-block;
+            padding-bottom: 5px;
+        }
+
+        #status {
+            font-size: 0.9rem;
+            margin-top: 5px;
+            color: #888;
+        }
+
+        #narrative-box {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            background: rgba(10, 10, 10, 0.9);
+            border: 1px solid #333;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            display: none;
+            /* Controlled by JS */
+            transition: opacity 0.5s;
+        }
+
+        .highlight {
+            color: #ffaa00;
+            font-weight: bold;
+        }
+
+        /* Intro Screen */
+        #intro-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 100;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 100;
-            background: #000;
-            pointer-events: auto;
-            text-align: center;
+            transition: opacity 1s;
         }
 
-        .narrative-text {
-            font-size: 1.5rem;
+        #intro-text {
             max-width: 600px;
-            line-height: 1.6;
-            margin-bottom: 2rem;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 1s, transform 1s;
+            text-align: center;
+            margin-bottom: 40px;
         }
 
-        .narrative-text.active {
-            opacity: 1;
-            transform: translateY(0);
+        .typewriter p {
+            overflow: hidden;
+            white-space: nowrap;
+            margin: 0 auto;
+            letter-spacing: .15em;
+            animation: typing 3.5s steps(40, end);
+            border-right: .15em solid orange;
         }
 
-        #start-btn {
-            padding: 15px 30px;
+        button {
             background: transparent;
-            border: 1px solid #fff;
-            color: #fff;
-            font-family: inherit;
-            font-size: 1.2rem;
+            border: 1px solid #666;
+            color: #ccc;
+            padding: 15px 30px;
             cursor: pointer;
-            opacity: 0;
-            transition: opacity 1s, background 0.3s, color 0.3s;
-            display: none;
-            /* hidden until end of intro text */
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s;
         }
 
-        #start-btn:hover {
-            background: #fff;
-            color: #000;
-        }
-
-        /* Custom Reticle */
-        #reticle {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 8px;
-            height: 8px;
-            border: 1px solid white;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            mix-blend-mode: difference;
-            transition: all 0.2s;
-            z-index: 200;
-        }
-
-        #reticle.active {
-            width: 40px;
-            height: 40px;
+        button:hover {
+            border-color: #fff;
             background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.5);
+            color: #fff;
         }
 
-        /* In-Game UI */
-        #game-ui {
+        /* Vignette */
+        #vignette {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             pointer-events: none;
-            display: none;
-        }
-
-        #mission-text {
-            position: absolute;
-            bottom: 50px;
-            width: 100%;
-            text-align: center;
-            font-size: 1rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.7);
-            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
-        }
-
-        #chapter-title {
-            position: absolute;
-            top: 40px;
-            width: 100%;
-            text-align: center;
-            font-size: 0.8rem;
-            letter-spacing: 5px;
-            opacity: 0.5;
-        }
-
-        #return-btn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            pointer-events: auto;
-            cursor: pointer;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 5px 10px;
-            font-size: 0.7rem;
-            display: none;
-            background: rgba(0, 0, 0, 0.5);
-        }
-
-        #return-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: white;
+            background: radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.8) 100%);
+            z-index: 10;
         }
     </style>
 </head>
 
 <body>
 
-    <!-- Narrative Intro -->
-    <div id="narrative-overlay">
-        <div id="intro-lines"></div>
-        <button id="start-btn">BEGIN ARCHITECTURE</button>
+    <div id="intro-screen">
+        <div id="intro-text">
+            <p>ARCHIVE TERMINAL [SESSION 1]</p>
+            <br>
+            <p>REALITY FRAGMENTATION DETECTED.</p>
+            <p>MEANING INTEGRITY: CRITICAL.</p>
+            <br>
+            <p>INITIATE RESTORATION PROTOCOL?</p>
+        </div>
+        <button id="start-btn">ACCESS DESK</button>
     </div>
 
-    <!-- Gameplay UI -->
-    <div id="game-ui">
-        <div id="chapter-title">CHAPTER I: THE SEPARATION</div>
-        <div id="mission-text"></div>
-        <div id="return-btn">RETURN TO MUSEUM</div>
+    <div id="vignette"></div>
+
+    <div id="ui-layer">
+        <div id="header">
+            <h1>The Archivist</h1>
+            <div id="status">CASE #001: THE TREE</div>
+        </div>
+        <div id="narrative-box"></div>
     </div>
 
-    <div id="reticle"></div>
     <div id="canvas-container"></div>
 
-    <!-- Three.js Import -->
+    <!-- Three.js -->
     <script type="importmap">
         {
             "imports": {
@@ -185,475 +184,368 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
-
-        // --- Narrative Data ---
-        const INTRO_LINES = [
-            "The world is broken.",
-            "Words have drifted from their objects.",
-            "Meaning has dissolved into noise.",
-            "You are the Architect.",
-            "You must rebuild the bridges.",
-            "Restore the connection."
-        ];
 
         class Game {
             constructor() {
                 this.container = document.getElementById('canvas-container');
-                this.scene = new THREE.Scene();
-                this.scene.background = new THREE.Color(0x050505);
-                this.scene.fog = new THREE.FogExp2(0x050505, 0.02);
 
-                this.initCamera();
+                // Scene Setup
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x0a0a0a); // Very dark grey
+                this.scene.fog = new THREE.Fog(0x0a0a0a, 10, 20);
+
+                // Camera (Fixed Top-Down/Angled)
+                this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+                this.camera.position.set(0, 12, 5);
+                this.camera.lookAt(0, 0, 0);
+
                 this.initRenderer();
-                this.initPostProcessing();
                 this.initLights();
-                this.initControls();
+                this.initPostProcessing();
                 this.initInput();
 
-                this.levels = {};
-                this.currentLevelName = '';
-                this.activeObjects = [];
-                this.level1Completed = false; // Progressive disclosure flag
+                // Game State
+                this.objects = []; // Interactables
+                this.draggedObject = null;
+                this.plane = new THREE.Plane(); // Intersection plane for dragging
+                this.pIntersect = new THREE.Vector3();
+                this.mouseOffset = new THREE.Vector3();
 
+                this.levelState = 'intro'; // intro, playing, complete
+
+                // Start Loop
                 window.addEventListener('resize', () => this.onWindowResize());
+                this.animate();
 
-                this.setupLevels();
-                this.startIntro();
-            }
-
-            // --- Initialization ---
-            initCamera() {
-                this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-                this.camera.position.set(0, 2, 8);
+                // UI Hooks
+                document.getElementById('start-btn').addEventListener('click', () => this.startGame());
             }
 
             initRenderer() {
-                this.renderer = new THREE.WebGLRenderer({ antialias: false });
+                this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
                 this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 1.0;
                 this.container.appendChild(this.renderer.domElement);
+            }
+
+            initLights() {
+                // Desk Lamp Effect (Spotlight)
+                this.spotLight = new THREE.SpotLight(0xffeeb1, 10); // Warm light
+                this.spotLight.position.set(2, 10, 2);
+                this.spotLight.angle = Math.PI / 6;
+                this.spotLight.penumbra = 0.5;
+                this.spotLight.decay = 1.5;
+                this.spotLight.distance = 50;
+                this.spotLight.castShadow = true;
+                this.spotLight.shadow.mapSize.width = 1024;
+                this.spotLight.shadow.mapSize.height = 1024;
+                this.scene.add(this.spotLight);
+
+                // Dim Ambient
+                this.ambientLight = new THREE.AmbientLight(0x404040, 2);
+                this.scene.add(this.ambientLight);
             }
 
             initPostProcessing() {
                 this.composer = new EffectComposer(this.renderer);
-                this.composer.addPass(new RenderPass(this.scene, this.camera));
+                this.composer.addPass(new RenderPass(this.scene, this.camera)); // Standard Render
 
-                // Very subtle bloom for visual polish without blinding
+                // Bloom (Subtle, for magic moments)
                 this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-                this.bloomPass.strength = 0.3;
-                this.bloomPass.radius = 0.2;
-                this.bloomPass.threshold = 0.8;
+                this.bloomPass.strength = 0; // Start off
+                this.bloomPass.threshold = 0.5;
+                this.bloomPass.radius = 0.5;
                 this.composer.addPass(this.bloomPass);
 
                 this.composer.addPass(new OutputPass());
             }
 
-            initLights() {
-                this.ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-                this.scene.add(this.ambientLight);
-
-                this.dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-                this.dirLight.position.set(5, 10, 7);
-                this.dirLight.castShadow = true;
-                this.scene.add(this.dirLight);
+            startGame() {
+                // Fade out intro
+                document.getElementById('intro-screen').style.opacity = 0;
+                setTimeout(() => {
+                    document.getElementById('intro-screen').style.display = 'none';
+                    this.buildDesk();
+                }, 1000);
             }
 
-            initControls() {
-                this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-                this.controls.enableDamping = true;
-                this.controls.dampingFactor = 0.05;
-                this.controls.enablePan = false;
-                this.controls.maxPolarAngle = Math.PI / 2 + 0.1; // allow slightly below horizon
-                this.controls.minDistance = 3;
-                this.controls.maxDistance = 15;
-                this.controls.enabled = false; // Disabled during intro
+            buildDesk() {
+                // 1. The Desk Surface
+                const deskGeometry = new THREE.PlaneGeometry(20, 10);
+                const deskMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x3d2817,
+                    roughness: 0.8,
+                    metalness: 0.1
+                });
+                const desk = new THREE.Mesh(deskGeometry, deskMaterial);
+                desk.rotation.x = -Math.PI / 2;
+                desk.receiveShadow = true;
+                this.scene.add(desk);
+
+                this.spawnLevel1();
+            }
+
+            spawnLevel1() {
+                this.showMessage("Evidence retrieved. The semantic link is broken. <br> <span class='highlight'>Reattach the Word to the Object.</span>");
+                this.levelState = 'playing';
+
+                // --- 1. The Object (Polaroid) ---
+                const photoGroup = new THREE.Group();
+
+                // Paper Base
+                const cardGeo = new THREE.BoxGeometry(3, 0.05, 3.5); // Slightly thick paper
+                const cardMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
+                const photoBase = new THREE.Mesh(cardGeo, cardMat);
+                photoBase.castShadow = true;
+                photoBase.receiveShadow = true;
+                photoGroup.add(photoBase);
+
+                // The Image (Dark square for now, representing the tree photo)
+                const imgGeo = new THREE.PlaneGeometry(2.6, 2.6);
+                const imgMat = new THREE.MeshStandardMaterial({ color: 0x111111 }); // Dark placeholder
+                const imgMesh = new THREE.Mesh(imgGeo, imgMat);
+                imgMesh.rotation.x = -Math.PI / 2;
+                imgMesh.position.y = 0.03; // slightly above paper
+                imgMesh.position.z = -0.2; // Offset for polaroid style
+                photoGroup.add(imgMesh);
+
+                // Actual Low Poly Tree Model popping out of the photo (The "Magic" element)
+                const treeGroup = new THREE.Group();
+                const trunk = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.1, 0.2, 0.8, 5),
+                    new THREE.MeshStandardMaterial({ color: 0x3e2723 })
+                );
+                trunk.position.y = 0.4;
+                treeGroup.add(trunk);
+
+                const leaves = new THREE.Mesh(
+                    new THREE.DodecahedronGeometry(0.6),
+                    new THREE.MeshStandardMaterial({ color: 0x2e7d32 })
+                );
+                leaves.position.y = 0.9;
+                treeGroup.add(leaves);
+
+                treeGroup.position.y = 0;
+                treeGroup.position.z = -0.2;
+                // Tree is initially Grey/Glitching? Or just there?
+                // Let's make it Grey first.
+                trunk.material.color.setHex(0x555555);
+                leaves.material.color.setHex(0x777777);
+
+                photoGroup.add(treeGroup);
+
+                // Initial Position (Random)
+                photoGroup.position.set(-3, 0.1, 1);
+                photoGroup.rotation.y = (Math.random() - 0.5) * 0.5; // Slight messy rotation
+
+                this.scene.add(photoGroup);
+                this.makeInteractable(photoGroup, 'target');
+                this.photoGroup = photoGroup; // Ref for logic
+                this.treeTrunk = trunk;
+                this.treeLeaves = leaves;
+
+
+                // --- 2. The Word (Index Card) ---
+                const textGroup = new THREE.Group();
+
+                // Card Base
+                const indexGeo = new THREE.BoxGeometry(2, 0.05, 1);
+                const indexMat = new THREE.MeshStandardMaterial({ color: 0xf5f5dc }); // Beige paper
+                const indexBase = new THREE.Mesh(indexGeo, indexMat);
+                indexBase.castShadow = true;
+                indexBase.receiveShadow = true;
+                textGroup.add(indexBase);
+
+                // Text "TREE" (Canvas Texture)
+                const canvas = document.createElement('canvas');
+                canvas.width = 256; canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = "#f5f5dc"; // match bg
+                ctx.fillRect(0, 0, 256, 128);
+                ctx.fillStyle = "#aa0000"; // Red text like a stamp
+                ctx.font = "bold 60px Courier New";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("TREE", 128, 64);
+
+                const tex = new THREE.CanvasTexture(canvas);
+                const label = new THREE.Mesh(
+                    new THREE.PlaneGeometry(1.8, 0.9),
+                    new THREE.MeshBasicMaterial({ map: tex, transparent: true })
+                );
+                label.rotation.x = -Math.PI / 2;
+                label.position.y = 0.03;
+                textGroup.add(label);
+
+                // Initial Position (Random)
+                textGroup.position.set(3, 0.1, -1);
+                textGroup.rotation.y = (Math.random() - 0.5) * 1.0;
+
+                this.scene.add(textGroup);
+                this.makeInteractable(textGroup, 'draggable');
+                this.textGroup = textGroup;
+            }
+
+            makeInteractable(mesh, type) {
+                mesh.userData.interactable = true;
+                mesh.userData.type = type;
+                // Add bounding box for easier raycasting if needed, but group works for now
+                this.objects.push(mesh);
             }
 
             initInput() {
                 this.raycaster = new THREE.Raycaster();
                 this.mouse = new THREE.Vector2();
-                this.reticle = document.getElementById('reticle');
 
-                window.addEventListener('mousemove', (e) => {
-                    this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-                    this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-                    this.reticle.style.left = e.clientX + 'px';
-                    this.reticle.style.top = e.clientY + 'px';
-                    this.checkHover();
-                });
-
-                window.addEventListener('mousedown', (e) => { this.onMouseDown(e); });
-                window.addEventListener('mouseup', () => { this.onMouseUp(); });
-                window.addEventListener('click', (e) => { this.onClick(e); });
-
-                // Return button logic
-                document.getElementById('return-btn').addEventListener('click', () => {
-                    this.loadLevel('hub');
-                });
+                window.addEventListener('mousemove', (e) => this.onMouseMove(e));
+                window.addEventListener('mousedown', (e) => this.onMouseDown(e));
+                window.addEventListener('mouseup', () => this.onMouseUp());
             }
 
-            // --- Narrative System ---
-            async startIntro() {
-                const container = document.getElementById('intro-lines');
-                const btn = document.getElementById('start-btn');
+            onMouseMove(e) {
+                this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
-                // Play narrative lines one by one
-                for (let line of INTRO_LINES) {
-                    container.innerHTML = `<div class="narrative-text active">${line}</div>`;
-                    await new Promise(r => setTimeout(r, 2500)); // Read time
-                    container.innerHTML = ''; // Clear
-                    await new Promise(r => setTimeout(r, 500)); // Pause
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+
+                if (this.draggedObject) {
+                    if (this.raycaster.ray.intersectPlane(this.plane, this.pIntersect)) {
+                        this.draggedObject.position.copy(this.pIntersect.sub(this.mouseOffset));
+                        // Lift slightly while dragging
+                        this.draggedObject.position.y = 1.0;
+                    }
+                } else {
+                    // Hover effects?
+                    document.body.style.cursor = 'default';
+                    const intersects = this.raycaster.intersectObjects(this.objects, true); // Recursive
+                    if (intersects.length > 0) {
+                        // Find the root group
+                        let group = intersects[0].object;
+                        while (group.parent && group.parent !== this.scene) {
+                            group = group.parent;
+                        }
+                        if (group.userData.interactable) {
+                            document.body.style.cursor = 'grab';
+                        }
+                    }
                 }
-
-                // Show Start Button
-                btn.style.display = 'block';
-                setTimeout(() => btn.style.opacity = 1, 100);
-
-                btn.addEventListener('click', () => {
-                    document.getElementById('narrative-overlay').style.opacity = 0;
-                    setTimeout(() => {
-                        document.getElementById('narrative-overlay').style.display = 'none';
-                        this.container.style.opacity = 1;
-                        document.getElementById('game-ui').style.display = 'block';
-                        this.animate();
-                        // START DIRECTLY IN LEVEL 1
-                        this.loadLevel('level1');
-                    }, 1000);
-                });
             }
 
-            // --- Level Management ---
-            setupLevels() {
-                // LEVEL 1: THE TREE (CONCRETE)
-                this.addLevel('level1', (group) => {
-                    this.scene.background = new THREE.Color(0x222222);
-                    this.controls.enabled = true;
-                    document.getElementById('chapter-title').innerText = "CHAPTER I: THE SEPARATION";
-                    document.getElementById('mission-text').innerText = "DRAG TO ALIGN THE WORD WITH THE OBJECT";
-                    document.getElementById('return-btn').style.display = 'none'; // Can't leave yet
+            onMouseDown(e) {
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(this.objects, true);
 
-                    // 1. The Broken Ring (Geometry)
-                    const radius = 2.5;
-                    const height = 0.5;
-                    const segments = 64;
+                if (intersects.length > 0) {
+                    // Find group root
+                    let group = intersects[0].object;
+                    while (group.parent && group.parent !== this.scene) {
+                        group = group.parent;
+                    }
 
-                    // Left Half (Word) - Gold/Paper
-                    const geo1 = new THREE.CylinderGeometry(radius, radius, height, segments, 1, false, Math.PI, Math.PI);
-                    const mat1 = new THREE.MeshStandardMaterial({
-                        color: 0xaa8866, roughness: 0.8, flatShading: false
-                    });
-                    const half1 = new THREE.Group();
-                    const mesh1 = new THREE.Mesh(geo1, mat1);
-                    mesh1.rotation.x = Math.PI / 2;
-                    half1.add(mesh1);
-
-                    // Text "TREE"
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 512; canvas.height = 256;
-                    const ctx = canvas.getContext('2d');
-                    ctx.fillStyle = "white";
-                    ctx.font = "bold 80px Courier New";
-                    ctx.textAlign = "center";
-                    ctx.fillText("TREE", 256, 150);
-                    const tex = new THREE.CanvasTexture(canvas);
-                    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
-                    sprite.scale.set(4, 2, 1);
-                    sprite.position.set(0, 1.5, 0.2);
-                    half1.add(sprite);
-
-                    // Right Half (Object) - Green/Organic
-                    const geo2 = new THREE.CylinderGeometry(radius, radius, height, segments, 1, false, 0, Math.PI);
-                    const mat2 = new THREE.MeshStandardMaterial({
-                        color: 0x225522, roughness: 0.6
-                    });
-                    const half2 = new THREE.Group();
-                    const mesh2 = new THREE.Mesh(geo2, mat2);
-                    mesh2.rotation.x = Math.PI / 2;
-                    half2.add(mesh2);
-
-                    // Low Poly Tree Model inside Half 2
-                    const trunk = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.2, 0.4, 1.5, 6),
-                        new THREE.MeshStandardMaterial({ color: 0x553311 })
-                    );
-                    trunk.rotation.x = Math.PI / 2;
-                    trunk.position.y = -0.5;
-
-                    const leaves = new THREE.Mesh(
-                        new THREE.DodecahedronGeometry(1.2),
-                        new THREE.MeshStandardMaterial({ color: 0x228822, flatShading: true })
-                    );
-                    leaves.position.y = -1.5; // Visual offset inside hoop
-                    leaves.rotation.x = Math.PI / 2;
-
-                    half2.add(trunk);
-                    half2.add(leaves);
-
-                    // Positioning
-                    half1.position.x = -0.1;
-                    half2.position.x = 0.1;
-
-                    // Initial Separation (Misaligned)
-                    half1.rotation.z = Math.PI / 2; // Crooked
-
-                    group.add(half1);
-                    group.add(half2);
-
-                    // GHOST HINT
-                    const ghost = new THREE.Mesh(geo1, new THREE.MeshBasicMaterial({
-                        color: 0xffaa00, wireframe: true, transparent: true, opacity: 0.1
-                    }));
-                    ghost.rotation.x = Math.PI / 2;
-                    ghost.position.set(-0.1, 0, 0);
-                    group.add(ghost);
-
-                    // Logic
-                    let won = false;
-                    let isDragging = false;
-
-                    group.userData.onMouseDown = () => { isDragging = true; };
-                    group.userData.onMouseUp = () => { isDragging = false; };
-                    group.userData.onMouseMove = (e) => {
-                        if (isDragging && !won) {
-                            half1.rotation.z += e.movementX * 0.005;
-                            checkWin();
-                        }
-                    };
-
-                    const checkWin = () => {
-                        // Normalize angle
-                        let r = half1.rotation.z % (Math.PI * 2);
-                        if (r > Math.PI) r -= Math.PI * 2;
-                        if (r < -Math.PI) r += Math.PI * 2;
-
-                        // Win if angle is close to 0
-                        if (Math.abs(r) < 0.1) {
-                            won = true;
-                            // Snap
-                            half1.rotation.z = 0;
-                            half1.position.x = 0;
-                            half2.position.x = 0;
-
-                            // Effects
-                            this.bloomPass.strength = 1.0;
-                            ghost.visible = false;
-                            document.getElementById('mission-text').innerText = "MEANING RESTORED.";
-                            document.getElementById('mission-text').style.color = "#FFD700";
-
-                            // Fade out bloom slowly
-                            let fade = setInterval(() => {
-                                this.bloomPass.strength *= 0.95;
-                                if (this.bloomPass.strength < 0.3) clearInterval(fade);
-                            }, 50);
-
-                            // Show next step after delay
-                            setTimeout(() => {
-                                this.level1Completed = true; // Unlock hub
-                                this.createNextButton(group, "ENTER THE MUSEUM");
-                            }, 2000);
-                        }
-                    };
-                });
-
-                // HUB (Museum)
-                this.addLevel('hub', (group) => {
-                    this.scene.background = new THREE.Color(0x111111);
-                    document.getElementById('chapter-title').innerText = "THE MUSEUM OF MEANING";
-                    document.getElementById('mission-text').innerText = "EXPLORE THE CONCEPTS";
-                    document.getElementById('return-btn').style.display = 'none';
-
-                    // Plinth Factory
-                    const createExhibit = (x, z, color, id, name) => {
-                        const base = new THREE.Mesh(
-                            new THREE.BoxGeometry(1, 4, 1),
-                            new THREE.MeshStandardMaterial({ color: 0x333333 })
+                    if (group.userData.interactable && group.userData.type === 'draggable') {
+                        this.draggedObject = group;
+                        this.plane.setFromNormalAndCoplanarPoint(
+                            new THREE.Vector3(0, 1, 0),
+                            group.position
                         );
-                        base.position.set(x, -1, z);
-                        group.add(base);
 
-                        // Floating Artifact
-                        const gem = new THREE.Mesh(
-                            new THREE.OctahedronGeometry(0.4),
-                            new THREE.MeshStandardMaterial({
-                                color: color, emissive: color, emissiveIntensity: 1,
-                                transparent: true, opacity: 0.8
-                            })
-                        );
-                        gem.position.set(x, 1.5, z);
-
-                        // Animation metadata
-                        gem.userData = { id: id, name: name, baseY: 1.5, phase: Math.random() * 10 };
-                        this.activeObjects.push(gem);
-                        group.add(gem);
-
-                        // Label (3D Text simplified as sprite)
-                        const canvas = document.createElement('canvas');
-                        canvas.width = 256; canvas.height = 64;
-                        const ctx = canvas.getContext('2d');
-                        ctx.fillStyle = "rgba(255,255,255,0.5)";
-                        ctx.font = "20px Courier New";
-                        ctx.textAlign = "center";
-                        ctx.fillText(name, 128, 40);
-                        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas) }));
-                        sprite.position.set(x, 2.2, z);
-                        sprite.scale.set(2, 0.5, 1);
-                        group.add(sprite);
-                    };
-
-                    this.activeObjects = []; // Reset active list
-
-                    // 1. The Tree (Already done, but revisit)
-                    createExhibit(-3, 0, 0xffaa00, 'level1', 'THE TREE');
-
-                    // 2. The Triangle (Peirce)
-                    createExhibit(0, 0, 0x00ffff, 'level2', 'THE TRIANGLE');
-
-                    // 3. The Myth (Barthes)
-                    createExhibit(3, 0, 0xff4444, 'level3', 'THE MYTH');
-
-                    this.controls.enabled = true;
-                });
-
-                // LEVEL 2: PEIRCE (Triangle)
-                this.addLevel('level2', (group) => {
-                    this.scene.background = new THREE.Color(0x111122);
-                    document.getElementById('chapter-title').innerText = "CHAPTER II: THE TRIAD";
-                    document.getElementById('mission-text').innerText = "USE ARROW KEYS TO CONNECT THE INTERPRETANT";
-                    document.getElementById('return-btn').style.display = 'block';
-
-                    // Setup Triangle Logic (Simplified from previous)
-                    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.8), new THREE.MeshStandardMaterial({ color: 0x888888 }));
-                    rock.position.set(-3, 0, -2);
-                    group.add(rock);
-
-                    const sign = new THREE.Mesh(new THREE.BoxGeometry(1, 1.4, 0.1), new THREE.MeshStandardMaterial({ color: 0xffffff }));
-                    sign.position.set(3, 0, -2);
-                    group.add(sign);
-
-                    const interpretant = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1, 4), new THREE.MeshStandardMaterial({
-                        color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 0.5
-                    }));
-                    interpretant.position.set(0, 1, 3);
-                    group.add(interpretant);
-
-                    // Beam
-                    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
-                    beam.geometry.translate(0, 0.5, 0);
-                    beam.rotation.x = -Math.PI / 2;
-                    group.add(beam);
-
-                    // Logic
-                    group.userData.onKeyDown = (e) => {
-                        const s = 0.5;
-                        if (e.key === 'ArrowLeft') interpretant.position.x -= s;
-                        if (e.key === 'ArrowRight') interpretant.position.x += s;
-                        if (e.key === 'ArrowUp') interpretant.position.z -= s;
-                        if (e.key === 'ArrowDown') interpretant.position.z += s;
-                    };
-
-                    group.userData.update = () => {
-                        // Beam follows rock -> interpretant
-                        beam.position.copy(rock.position);
-                        beam.lookAt(interpretant.position);
-                        beam.rotateX(Math.PI / 2);
-                        beam.scale.set(1, rock.position.distanceTo(interpretant.position), 1);
-
-                        // Win condition
-                        if (Math.abs(interpretant.position.x) < 1 && Math.abs(interpretant.position.z + 2) < 1) {
-                            interpretant.material.color.setHex(0x00ff00);
-                            document.getElementById('mission-text').innerText = "SEMIOSIS ACTIVE";
-                            document.getElementById('mission-text').style.color = "#00ff00";
+                        if (this.raycaster.ray.intersectPlane(this.plane, this.pIntersect)) {
+                            this.mouseOffset.copy(this.pIntersect).sub(group.position);
                         }
-                    };
-                });
-
-                // LEVEL 3: BARTHES (Myth)
-                this.addLevel('level3', (group) => {
-                    this.scene.background = new THREE.Color(0x332211);
-                    document.getElementById('chapter-title').innerText = "CHAPTER III: THE MYTH";
-                    document.getElementById('mission-text').innerText = "DRAG MOUSE UP TO MYTHOLOGIZE";
-                    document.getElementById('return-btn').style.display = 'block';
-
-                    const soldier = new THREE.Group();
-                    const mat = new THREE.MeshStandardMaterial({ color: 0x556644 });
-                    soldier.add(new THREE.Mesh(new THREE.BoxGeometry(1, 2, 0.5), mat));
-                    soldier.add(new THREE.Mesh(new THREE.SphereGeometry(0.5), mat));
-                    soldier.children[1].position.y = 1.2;
-                    group.add(soldier);
-
-                    let value = 0;
-                    group.userData.onMouseMove = (e) => {
-                        // Simple vertical mouse position maps to myth value
-                        value = 1 - (e.clientY / window.innerHeight);
-
-                        const gold = new THREE.Color(0xffaa00);
-                        const drab = new THREE.Color(0x556644);
-                        mat.color.lerpColors(drab, gold, value);
-                        mat.emissive.setHex(0xffaa00);
-                        mat.emissiveIntensity = value;
-
-                        soldier.rotation.y += 0.02;
-                    };
-                });
-            }
-
-            addLevel(name, fn) { this.levels[name] = fn; }
-
-            loadLevel(name) {
-                // Cleanup
-                if (this.currentLevelObject) {
-                    this.scene.remove(this.currentLevelObject);
-                    this.currentLevelObject = null;
+                        document.body.style.cursor = 'grabbing';
+                        return;
+                    }
                 }
-
-                // Init new
-                this.currentLevelName = name;
-                this.currentLevelObject = new THREE.Group();
-                this.scene.add(this.currentLevelObject);
-
-                // Reset Camera
-                this.camera.position.set(0, 3, 8);
-                this.camera.lookAt(0, 0, 0);
-
-                if (this.levels[name]) this.levels[name](this.currentLevelObject);
             }
 
-            createNextButton(group, text) {
-                const canvas = document.createElement('canvas');
-                canvas.width = 512; canvas.height = 128;
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = "rgba(0,0,0,0.8)";
-                ctx.fillRect(0, 0, 512, 128);
-                ctx.strokeStyle = "white";
-                ctx.lineWidth = 5;
-                ctx.strokeRect(10, 10, 492, 108);
-                ctx.fillStyle = "white";
-                ctx.font = "bold 40px Courier New";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(text, 256, 64);
-
-                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas) }));
-                sprite.position.set(0, -2, 2);
-                sprite.scale.set(4, 1, 1);
-
-                // Raycastable
-                sprite.userData = { isButton: true, action: () => this.loadLevel('hub') };
-                this.activeObjects.push(sprite);
-
-                group.add(sprite);
+            onMouseUp() {
+                if (this.draggedObject) {
+                    this.draggedObject.position.y = 0.1; // Drop back to desk
+                    this.checkConnection();
+                    this.draggedObject = null;
+                    document.body.style.cursor = 'grab';
+                }
             }
 
-            // --- Loop ---
+            checkConnection() {
+                if (this.levelState !== 'playing') return;
+
+                // Check distance between Word (dragged) and Photo (target)
+                // World position of centers
+                const dist = this.textGroup.position.distanceTo(this.photoGroup.position);
+
+                // Threshold to "Snap"
+                if (dist < 2.0) {
+                    this.snapAndWin();
+                }
+            }
+
+            snapAndWin() {
+                this.levelState = 'complete';
+
+                // 1. Audio/Visual Snap
+                // Move text onto the bottom of the photo
+                // Relative to world:
+                // We want the text card to basically align with the bottom of the polaroid.
+
+                // Animate snap (simple teleport for now, lerp later if needed)
+                this.textGroup.position.copy(this.photoGroup.position);
+                this.textGroup.position.z += 1.5; // Below the image part
+                this.textGroup.position.y = 0.15; // On top of photo base
+                this.textGroup.rotation.y = this.photoGroup.rotation.y; // Align rotation
+                this.textGroup.rotation.x = 0; // Flat
+
+                // Disable interaction
+                this.textGroup.userData.interactable = false;
+
+                // 2. Magic Effect
+                this.bloomPass.strength = 1.5;
+
+                // Color the tree
+                this.treeTrunk.material.color.setHex(0x5d4037);
+                this.treeLeaves.material.color.setHex(0x4caf50);
+                this.treeLeaves.material.emissive.setHex(0x2e7d32);
+                this.treeLeaves.material.emissiveIntensity = 0.5;
+
+                // Narrative
+                this.showMessage("<span class='highlight'>CONNECTION ESTABLISHED.</span><br>The bond is arbitrary, yet it anchors the object to reality.");
+
+                // Next Level Button?
+                setTimeout(() => {
+                    // Fade bloom down
+                    const fade = setInterval(() => {
+                        this.bloomPass.strength *= 0.95;
+                        if (this.bloomPass.strength < 0.1) clearInterval(fade);
+                    }, 50);
+
+                    this.showStamp();
+                }, 2000);
+            }
+
+            showStamp() {
+                // TODO: Add visual 'CASE CLOSED' stamp.
+                // For now, just update text.
+                const status = document.getElementById('status');
+                status.innerText = "CASE #001: CLOSED";
+                status.style.color = "#4caf50";
+            }
+
+            showMessage(html) {
+                const box = document.getElementById('narrative-box');
+                box.innerHTML = html;
+                box.style.display = 'block';
+                // Trigger reflow
+                void box.offsetWidth;
+                box.style.opacity = 1;
+            }
+
             onWindowResize() {
                 this.camera.aspect = window.innerWidth / window.innerHeight;
                 this.camera.updateProjectionMatrix();
@@ -661,81 +553,19 @@
                 this.composer.setSize(window.innerWidth, window.innerHeight);
             }
 
-            checkHover() {
-                this.raycaster.setFromCamera(this.mouse, this.camera);
-                const intersects = this.raycaster.intersectObjects(this.activeObjects);
-                if (intersects.length > 0) {
-                    this.reticle.classList.add('active');
-                    document.body.style.cursor = 'pointer';
-                } else {
-                    this.reticle.classList.remove('active');
-                    document.body.style.cursor = 'none';
-                }
-            }
-
-            onMouseDown(e) {
-                if (this.currentLevelObject && this.currentLevelObject.userData.onMouseDown)
-                    this.currentLevelObject.userData.onMouseDown(e);
-            }
-            onMouseUp(e) {
-                if (this.currentLevelObject && this.currentLevelObject.userData.onMouseUp)
-                    this.currentLevelObject.userData.onMouseUp(e);
-            }
-            onClick(e) {
-                this.raycaster.setFromCamera(this.mouse, this.camera);
-                const intersects = this.raycaster.intersectObjects(this.activeObjects);
-                if (intersects.length > 0 && intersects[0].object.userData.isButton) {
-                    intersects[0].object.userData.action();
-                    return;
-                }
-                if (intersects.length > 0 && intersects[0].object.userData.id) {
-                    this.loadLevel(intersects[0].object.userData.id);
-                }
-            }
-
             animate() {
                 requestAnimationFrame(() => this.animate());
 
-                const dt = 0.016;
-
-                // Intro is handled separately via DOM opacity
-                if (this.currentLevelObject) {
-                    // Level specific updates
-                    if (this.currentLevelObject.userData.update) this.currentLevelObject.userData.update();
-
-                    // Mouse move propagation
-                    if (this.currentLevelObject.userData.onMouseMove)
-                        this.currentLevelObject.userData.onMouseMove({ movementX: 1 }); // Mock relative? No, need real event.
-                    // Actually better to hook window event to pass data but keep simple for now
+                // Subtle float for the tree leaves to make it feel "alive" when solved
+                if (this.levelState === 'complete' && this.treeLeaves) {
+                    this.treeLeaves.position.y = 0.9 + Math.sin(Date.now() * 0.002) * 0.05;
                 }
 
-                // Animate floating gems in Hub
-                if (this.currentLevelName === 'hub') {
-                    this.activeObjects.forEach(obj => {
-                        if (obj.userData.phase) {
-                            obj.position.y = obj.userData.baseY + Math.sin(Date.now() * 0.001 + obj.userData.phase) * 0.1;
-                            obj.rotation.y += 0.01;
-                        }
-                    });
-                }
-
-                this.controls.update();
                 this.composer.render();
             }
         }
 
-        // Pass mouse moves to active level
-        const game = new Game();
-        window.addEventListener('mousemove', (e) => {
-            if (game.currentLevelObject && game.currentLevelObject.userData.onMouseMove)
-                game.currentLevelObject.userData.onMouseMove(e);
-        });
-        window.addEventListener('keydown', (e) => {
-            if (game.currentLevelObject && game.currentLevelObject.userData.onKeyDown)
-                game.currentLevelObject.userData.onKeyDown(e);
-        });
-
-        window.gameInstance = game;
+        window.gameInstance = new Game();
     </script>
 </body>
 
