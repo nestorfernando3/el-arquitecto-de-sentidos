@@ -421,27 +421,39 @@
                     this.setInstructions("Welcome to the Museum of Meaning. Click on a glowing symbol to enter.");
                 });
 
-                // SAUSSURE
+                // SAUSSURE (REFINED)
                 this.addLevel('saussure', (group) => {
-                    this.scene.background = new THREE.Color(0xeeeeee);
-                    this.scene.fog = new THREE.Fog(0xeeeeee, 20, 50);
-                    this.bloomPass.strength = 0.5;
+                    this.scene.background = new THREE.Color(0xdddddd); // Slightly darker for contrast
+                    this.scene.fog = new THREE.Fog(0xdddddd, 20, 50);
+                    this.bloomPass.strength = 0.1; // REDUCED from 0.5
+                    this.bloomPass.threshold = 0.9;
 
-                    this.setInstructions("DRAG anywhere to rotate the Red Signifier until it snaps to the Blue Signified.");
+                    this.setInstructions("MISSION: Create Meaning. Drag horizontally to align the RED WORD with the BLUE OBJECT.");
 
                     const semiGeo = new THREE.CylinderGeometry(2, 2, 0.5, 64, 1, false, 0, Math.PI);
 
+                    // GHOST TARGET
+                    const ghost = new THREE.Mesh(semiGeo, new THREE.MeshBasicMaterial({
+                        color: 0xff0000,
+                        transparent: true,
+                        opacity: 0.1,
+                        wireframe: true
+                    }));
+                    ghost.rotation.x = Math.PI / 2;
+                    ghost.position.set(0, 0, 0);
+                    group.add(ghost);
+
                     // Half 1: Signifier (Red)
                     const half1 = new THREE.Group();
-                    const coin1 = new THREE.Mesh(semiGeo, new THREE.MeshStandardMaterial({ color: 0xff3333 }));
+                    const coin1 = new THREE.Mesh(semiGeo, new THREE.MeshStandardMaterial({ color: 0xff3333, roughness: 0.5 }));
                     coin1.rotation.x = Math.PI / 2;
                     half1.add(coin1);
 
-                    // Better Text Generation
+                    // Better Text Position
                     const canvas = document.createElement('canvas');
                     canvas.width = 512; canvas.height = 256;
                     const ctx = canvas.getContext('2d');
-                    ctx.font = "bold 60px Arial";
+                    ctx.font = "bold 60px Courier New";
                     ctx.fillStyle = "white";
                     ctx.textAlign = "center";
                     ctx.fillText("SIGNIFIER", 256, 128);
@@ -452,17 +464,16 @@
                     const tex = new THREE.CanvasTexture(canvas);
                     const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex }));
                     label.scale.set(4, 2, 1);
-                    label.position.set(0, 1, 0.6);
+                    label.position.set(0, 1.8, 0); // Moved UP
                     half1.add(label);
 
                     // Half 2: Signified
                     const half2 = new THREE.Group();
-                    const coin2 = new THREE.Mesh(semiGeo, new THREE.MeshStandardMaterial({ color: 0x3333ff }));
+                    const coin2 = new THREE.Mesh(semiGeo, new THREE.MeshStandardMaterial({ color: 0x3333ff, roughness: 0.5 }));
                     coin2.rotation.x = Math.PI / 2;
                     coin2.rotation.z = Math.PI;
                     half2.add(coin2);
 
-                    // Tree icon
                     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.5), new THREE.MeshStandardMaterial({ color: 0x554433 }));
                     trunk.rotation.x = Math.PI / 2;
                     trunk.position.y = -0.5;
@@ -474,6 +485,7 @@
 
                     half1.position.x = -0.5;
                     half2.position.x = 0.5;
+                    half1.rotation.z = Math.PI / 2; // Start unaligned
                     group.add(half1);
                     group.add(half2);
 
@@ -482,26 +494,32 @@
                     const onUp = () => holding = false;
                     const onMove = (e) => {
                         if (holding && !won) {
-                            half1.rotation.z += e.movementX * 0.01;
+                            half1.rotation.z += e.movementX * 0.005; // Reduced sensitivity
                             checkWin();
                         }
                     };
 
                     const checkWin = () => {
                         const r1 = (half1.rotation.z % (Math.PI * 2));
-                        // Target is 0 effectively relative to half2's flat side
-                        if (Math.abs(Math.sin(r1)) < 0.1 && Math.cos(r1) > 0) {
+                        let angle = r1;
+                        if (angle > Math.PI) angle -= Math.PI * 2;
+                        if (angle < -Math.PI) angle += Math.PI * 2;
+
+                        if (Math.abs(angle) < 0.15) {
                             won = true;
                             half1.rotation.z = 0;
                             half1.position.x = 0;
                             half2.position.x = 0;
-                            this.bloomPass.strength = 3;
-                            this.setInstructions("MEANING CONSOLIDATED: The arbitrary is now necessary.");
 
-                            // Gold material
+                            this.bloomPass.strength = 1.5;
+                            setTimeout(() => { if (this.currentLevelName === 'saussure') this.bloomPass.strength = 0.1; }, 1000);
+
+                            this.setInstructions("MEANING CONSOLIDATED: The Sign is Arbitrary, but the System is Fixed.");
+
                             const gold = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffaa00, emissiveIntensity: 0.5 });
                             coin1.material = gold;
                             coin2.material = gold;
+                            ghost.visible = false;
                         }
                     };
 
@@ -518,7 +536,7 @@
                 // PEIRCE
                 this.addLevel('peirce', (group) => {
                     this.scene.background = new THREE.Color(0x050505);
-                    this.ambientLight.intensity = 0.8; // Brighter
+                    this.ambientLight.intensity = 0.8;
                     this.setInstructions("Connect the Triangle. Move the CYAN PRISMA to intercept the Red Laser.");
                     document.getElementById('keys-hint').style.display = 'flex';
 
@@ -614,7 +632,6 @@
                     let val = 0;
                     let drag = false;
                     const onDown = (e) => {
-                        // Simplified lever interaction: click anywhere near lever
                         const rect = lever.getBoundingClientRect();
                         if (e.clientX > rect.left - 50) drag = true;
                     };
@@ -632,7 +649,6 @@
                     window.addEventListener('mousemove', onMove);
 
                     group.userData.update = () => {
-                        // Lerp Material
                         const gold = new THREE.Color(0xffd700);
                         const olive = new THREE.Color(0x445533);
                         mat.color.lerpColors(olive, gold, val);
@@ -714,9 +730,7 @@
                     this.camera.position.set(0, 3, 10);
                     this.camera.lookAt(0, 0, 0);
                     document.getElementById('return-hint').style.display = 'block';
-                    this.controls.enabled = false; // Disable orbit in levels for focused interactions? Or keep enabled? 
-                    // Let's keep enabled but maybe restrict? Actually strict orbit is annoying for puzzles.
-                    // For Saussure: orbit ok. Peirce: top down better? Baudrillard: auto move.
+                    this.controls.enabled = false;
                     if (name === 'peirce') {
                         this.camera.position.set(0, 10, 0);
                         this.camera.lookAt(0, 0, 0);
