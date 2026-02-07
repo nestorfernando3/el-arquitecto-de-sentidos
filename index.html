@@ -12,7 +12,8 @@
             overflow: hidden;
             background-color: #111;
             font-family: 'Courier New', Courier, monospace;
-            /* Monospaced for that "raw data" feel */
+            cursor: none;
+            /* Hide default cursor, use custom reticle */
         }
 
         #canvas-container {
@@ -21,6 +22,28 @@
             left: 0;
             width: 100%;
             height: 100%;
+        }
+
+        /* Custom Cursor/Reticle */
+        #reticle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            border: 2px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            mix-blend-mode: difference;
+            transition: width 0.2s, height 0.2s, background 0.2s;
+            z-index: 100;
+        }
+
+        #reticle.active {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
         }
 
         #ui-overlay {
@@ -52,35 +75,43 @@
             animation: fadeInOut 4s ease-in-out 1s forwards;
         }
 
-        #interaction-prompt {
+        #level-instructions {
             position: absolute;
-            bottom: 50px;
-            width: 100%;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             text-align: center;
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 0.8rem;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 0.9rem;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.5s;
+            z-index: 20;
+            max-width: 600px;
         }
 
         #return-hint {
             position: absolute;
             top: 20px;
             left: 20px;
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.8rem;
             cursor: pointer;
             pointer-events: auto;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 5px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            padding: 8px 12px;
             display: none;
+            background: rgba(0, 0, 0, 0.5);
             transition: all 0.3s;
+            z-index: 20;
         }
 
         #return-hint:hover {
             color: #fff;
-            border-color: #fff;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         @keyframes fadeInOut {
@@ -103,18 +134,20 @@
             }
         }
 
-        /* Barthes Slider Replacement - A "Conceptual Lever" UI (Hidden by default) */
+        /* Barthes Lever */
         #barthes-lever {
             position: absolute;
-            bottom: 10%;
+            bottom: 20%;
             right: 10%;
-            width: 50px;
+            width: 40px;
             height: 200px;
             background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
             display: none;
             pointer-events: auto;
-            cursor: grab;
+            cursor: none;
+            /* using reticle */
+            z-index: 20;
         }
 
         #lever-handle {
@@ -123,27 +156,66 @@
             background: #fff;
             position: absolute;
             bottom: 0;
-            cursor: grabbing;
+            box-shadow: 0 0 10px white;
+        }
+
+        #barthes-hint {
+            position: absolute;
+            bottom: 15%;
+            right: 10%;
+            color: white;
+            font-size: 0.8rem;
+            text-align: center;
+            opacity: 0.8;
+            display: none;
+        }
+
+        #keys-hint {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            display: none;
+            opacity: 0.7;
+        }
+
+        .key {
+            border: 1px solid white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
         }
     </style>
 </head>
 
 <body>
+    <div id="reticle"></div>
+
     <div id="ui-overlay">
         <h1>Museum of Meaning</h1>
         <div class="subtitle">Architecting the senses through semiotics</div>
     </div>
 
-    <div id="interaction-prompt">Click to Enter</div>
-    <div id="return-hint" onclick="gameInstance.loadLevel('hub')">RETURN TO GALLERY</div>
+    <div id="level-instructions"></div>
+    <div id="return-hint" onclick="gameInstance.loadLevel('hub')">← RETURN TO GALLERY</div>
 
     <div id="barthes-lever">
         <div id="lever-handle"></div>
     </div>
+    <div id="barthes-hint">DRAG LEVER UP</div>
+
+    <div id="keys-hint">
+        <div class="key">←</div>
+        <div class="key">↑</div>
+        <div class="key">↓</div>
+        <div class="key">→</div>
+    </div>
 
     <div id="canvas-container"></div>
 
-    <!-- Three.js + PostProcessing from CDN -->
     <script type="importmap">
         {
             "imports": {
@@ -165,7 +237,7 @@
             constructor() {
                 this.container = document.getElementById('canvas-container');
                 this.scene = new THREE.Scene();
-                this.scene.background = new THREE.Color(0x050505); // Dark museum
+                this.scene.background = new THREE.Color(0x050505);
                 this.scene.fog = new THREE.FogExp2(0x050505, 0.03);
 
                 this.initCamera();
@@ -176,69 +248,56 @@
                 this.initInput();
 
                 this.levels = {};
-                this.currentLevel = null;
                 this.currentLevelName = '';
-                this.activeObjects = []; // Clickable objects
+                this.activeObjects = [];
 
                 window.addEventListener('resize', () => this.onWindowResize());
                 this.animate();
 
-                // Define Levels
                 this.setupLevels();
-
-                // Start in Museum Hub
                 this.loadLevel('hub');
             }
 
             initCamera() {
                 this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
                 this.camera.position.set(0, 2, 8);
-                this.camera.lookAt(0, 1, 0);
             }
 
             initRenderer() {
-                this.renderer = new THREE.WebGLRenderer({ antialias: false }); // PMREM prefers false? stick to false for Perf with bloom
+                this.renderer = new THREE.WebGLRenderer({ antialias: false });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
                 this.renderer.setPixelRatio(window.devicePixelRatio);
                 this.renderer.shadowMap.enabled = true;
                 this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-                this.renderer.toneMapping = THREE.ReinhardToneMapping;
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 1.0;
                 this.container.appendChild(this.renderer.domElement);
             }
 
             initPostProcessing() {
                 this.composer = new EffectComposer(this.renderer);
-
-                const renderPass = new RenderPass(this.scene, this.camera);
-                this.composer.addPass(renderPass);
+                this.composer.addPass(new RenderPass(this.scene, this.camera));
 
                 this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-                this.bloomPass.threshold = 0.2;
-                this.bloomPass.strength = 1.2; // Intense bloom
-                this.bloomPass.radius = 0.5;
                 this.composer.addPass(this.bloomPass);
-
-                const outputPass = new OutputPass();
-                this.composer.addPass(outputPass);
+                this.composer.addPass(new OutputPass());
             }
 
             initLights() {
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
-                this.scene.add(ambientLight);
+                this.ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                this.scene.add(this.ambientLight);
 
-                this.spotLight = new THREE.SpotLight(0xffffff, 50);
-                this.spotLight.angle = 0.3;
-                this.spotLight.penumbra = 0.5;
-                this.spotLight.castShadow = true;
-                this.spotLight.position.set(0, 10, 5);
-                this.scene.add(this.spotLight);
+                this.dirLight = new THREE.DirectionalLight(0xffffff, 2);
+                this.dirLight.position.set(5, 10, 5);
+                this.dirLight.castShadow = true;
+                this.scene.add(this.dirLight);
             }
 
             initControls() {
                 this.controls = new OrbitControls(this.camera, this.renderer.domElement);
                 this.controls.enableDamping = true;
                 this.controls.dampingFactor = 0.05;
-                this.controls.maxPolarAngle = Math.PI / 1.5; // Don't go below ground
+                this.controls.maxPolarAngle = Math.PI / 1.5;
                 this.controls.minDistance = 2;
                 this.controls.maxDistance = 20;
             }
@@ -246,11 +305,15 @@
             initInput() {
                 this.raycaster = new THREE.Raycaster();
                 this.mouse = new THREE.Vector2();
-                this.interactionPrompt = document.getElementById('interaction-prompt');
+                this.reticle = document.getElementById('reticle');
 
                 window.addEventListener('mousemove', (e) => {
                     this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
                     this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+                    // Reticle follows mouse visually (even though cursor is hidden)
+                    this.reticle.style.left = e.clientX + 'px';
+                    this.reticle.style.top = e.clientY + 'px';
 
                     this.checkHover();
                 });
@@ -262,8 +325,23 @@
 
             checkHover() {
                 if (this.currentLevelName !== 'hub') {
-                    this.interactionPrompt.style.opacity = 0;
-                    document.body.style.cursor = 'auto';
+                    // Check logic for specific levels if needed
+                    if (this.currentLevelName === 'barthes') {
+                        // Check lever
+                        const lever = document.getElementById('barthes-lever');
+                        const rect = lever.getBoundingClientRect();
+                        const cx = parseFloat(this.reticle.style.left);
+                        const cy = parseFloat(this.reticle.style.top);
+                        if (cx >= rect.left && cx <= rect.right && cy >= rect.top && cy <= rect.bottom) {
+                            this.reticle.classList.add('active');
+                        } else {
+                            this.reticle.classList.remove('active');
+                        }
+                    } else if (this.currentLevelName === 'saussure') {
+                        this.reticle.classList.add('active'); // Always active interaction in saussure (drag anywhere)
+                    } else {
+                        this.reticle.classList.remove('active');
+                    }
                     return;
                 }
 
@@ -271,13 +349,12 @@
                 const intersects = this.raycaster.intersectObjects(this.activeObjects);
 
                 if (intersects.length > 0) {
-                    document.body.style.cursor = 'pointer';
-                    const name = intersects[0].object.userData.levelName || 'Exhibit';
-                    this.interactionPrompt.innerText = `Enter: ${name}`;
-                    this.interactionPrompt.style.opacity = 1;
+                    this.reticle.classList.add('active');
+                    const name = intersects[0].object.userData.levelName;
+                    this.setInstructions(`ENTER EXHIBIT: ${name}`);
                 } else {
-                    document.body.style.cursor = 'auto';
-                    this.interactionPrompt.style.opacity = 0;
+                    this.reticle.classList.remove('active');
+                    this.setInstructions("Explore the Gallery. Click a concept to enter.");
                 }
             }
 
@@ -293,6 +370,12 @@
                 }
             }
 
+            setInstructions(text) {
+                const el = document.getElementById('level-instructions');
+                el.innerText = text;
+                el.style.opacity = 1;
+            }
+
             onWindowResize() {
                 this.camera.aspect = window.innerWidth / window.innerHeight;
                 this.camera.updateProjectionMatrix();
@@ -301,180 +384,130 @@
             }
 
             setupLevels() {
-                // HUB: The Museum Gallery
+                // HUB
                 this.addLevel('hub', (group) => {
                     this.scene.background = new THREE.Color(0x111111);
                     this.scene.fog = new THREE.FogExp2(0x111111, 0.05);
-                    this.controls.enablePan = true;
+                    this.bloomPass.strength = 1.2;
+                    this.bloomPass.radius = 0.5;
+                    this.ambientLight.intensity = 0.5;
 
-                    document.getElementById('return-hint').style.display = 'none';
-
-                    // Floor (Reflectiveish)
-                    const floorGeo = new THREE.PlaneGeometry(50, 50);
-                    const floorMat = new THREE.MeshStandardMaterial({
-                        color: 0x222222,
-                        roughness: 0.1,
-                        metalness: 0.1
-                    });
-                    const floor = new THREE.Mesh(floorGeo, floorMat);
-                    floor.rotation.x = -Math.PI / 2;
-                    floor.receiveShadow = true;
-                    group.add(floor);
-
-                    // Pedestals
-                    const createPlinth = (x, z, color, levelId, title) => {
-                        const geo = new THREE.BoxGeometry(1, 1.2, 1);
-                        const mat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 });
+                    const createPlinth = (x, z, color, levelId, name) => {
+                        const geo = new THREE.BoxGeometry(1, 1, 1);
+                        const mat = new THREE.MeshStandardMaterial({ color: 0x333333 });
                         const mesh = new THREE.Mesh(geo, mat);
-                        mesh.position.set(x, 0.6, z);
+                        mesh.position.set(x, 0.5, z);
                         mesh.castShadow = true;
-                        mesh.receiveShadow = true;
                         group.add(mesh);
 
-                        // Floating Abstract Symbol (The Portal)
                         const portalGeo = new THREE.IcosahedronGeometry(0.3, 0);
                         const portalMat = new THREE.MeshStandardMaterial({
-                            color: color,
-                            emissive: color,
-                            emissiveIntensity: 2,
-                            transparent: true,
-                            opacity: 0.8
+                            color: color, emissive: color, emissiveIntensity: 2, transparent: true, opacity: 0.8
                         });
                         const portal = new THREE.Mesh(portalGeo, portalMat);
-                        portal.position.set(x, 1.8, z);
+                        portal.position.set(x, 2, z);
                         group.add(portal);
 
-                        // Animation data
-                        portal.userData = {
-                            levelId: levelId,
-                            levelName: title,
-                            floatY: 1.8,
-                            phase: Math.random() * Math.PI
-                        };
+                        portal.userData = { levelId, levelName: name, floatY: 2, phase: Math.random() * 10 };
                         this.activeObjects.push(portal);
-                        return portal;
                     };
 
-                    this.activeObjects = []; // Reset interaction targets
-                    const p1 = createPlinth(-3, 0, 0xff4444, 'saussure', 'The Diad (Saussure)');
-                    const p2 = createPlinth(-1, 0, 0x44ff44, 'peirce', 'The Triad (Peirce)');
-                    const p3 = createPlinth(1, 0, 0xffaa00, 'barthes', 'The Myth (Barthes)');
-                    const p4 = createPlinth(3, 0, 0x4444ff, 'baudrillard', 'The Simulacrum (Baudrillard)');
+                    this.activeObjects = [];
+                    createPlinth(-3, 0, 0xff4444, 'saussure', 'Saussure');
+                    createPlinth(-1, 0, 0x44ff44, 'peirce', 'Peirce');
+                    createPlinth(1, 0, 0xffaa00, 'barthes', 'Barthes');
+                    createPlinth(3, 0, 0x4444ff, 'baudrillard', 'Baudrillard');
+
+                    this.setInstructions("Welcome to the Museum of Meaning. Click on a glowing symbol to enter.");
                 });
 
-                // LEVEL 1: Saussure Redux
+                // SAUSSURE
                 this.addLevel('saussure', (group) => {
-                    this.bloomPass.strength = 0.8;
                     this.scene.background = new THREE.Color(0xeeeeee);
-                    this.scene.fog = new THREE.FogExp2(0xeeeeee, 0.02);
+                    this.scene.fog = new THREE.Fog(0xeeeeee, 20, 50);
+                    this.bloomPass.strength = 0.5;
 
-                    // Semicircle geometries
+                    this.setInstructions("DRAG anywhere to rotate the Red Signifier until it snaps to the Blue Signified.");
+
                     const semiGeo = new THREE.CylinderGeometry(2, 2, 0.5, 64, 1, false, 0, Math.PI);
 
-                    const redMat = new THREE.MeshNormalMaterial({ wireframe: false }); // Modern look
-                    const blueMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.2 });
-
+                    // Half 1: Signifier (Red)
                     const half1 = new THREE.Group();
                     const coin1 = new THREE.Mesh(semiGeo, new THREE.MeshStandardMaterial({ color: 0xff3333 }));
                     coin1.rotation.x = Math.PI / 2;
                     half1.add(coin1);
 
-                    // 3D Text needs FontLoader, using Sprite for simplicity/speed but stylized
-                    const createLabel = (txt) => {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = 512; canvas.height = 128;
-                        const ctx = canvas.getContext('2d');
-                        ctx.fillStyle = 'rgba(0,0,0,0)'; // transparent
-                        ctx.font = 'bold 80px Courier New';
-                        ctx.strokeStyle = 'white';
-                        ctx.lineWidth = 4;
-                        ctx.strokeText(txt, 256, 100);
-                        ctx.fillStyle = 'black';
-                        ctx.textAlign = 'center';
-                        ctx.fillText(txt, 256, 100);
-                        return new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas) }));
-                    };
+                    // Better Text Generation
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 512; canvas.height = 256;
+                    const ctx = canvas.getContext('2d');
+                    ctx.font = "bold 60px Arial";
+                    ctx.fillStyle = "white";
+                    ctx.textAlign = "center";
+                    ctx.fillText("SIGNIFIER", 256, 128);
+                    ctx.strokeStyle = "black";
+                    ctx.lineWidth = 4;
+                    ctx.strokeText("SIGNIFIER", 256, 128);
 
-                    const lbl = createLabel("SIGNIFIER");
-                    lbl.position.set(0, 1.5, 0.2);
-                    lbl.scale.set(4, 1, 1);
-                    half1.add(lbl);
+                    const tex = new THREE.CanvasTexture(canvas);
+                    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex }));
+                    label.scale.set(4, 2, 1);
+                    label.position.set(0, 1, 0.6);
+                    half1.add(label);
 
+                    // Half 2: Signified
                     const half2 = new THREE.Group();
                     const coin2 = new THREE.Mesh(semiGeo, new THREE.MeshStandardMaterial({ color: 0x3333ff }));
                     coin2.rotation.x = Math.PI / 2;
                     coin2.rotation.z = Math.PI;
                     half2.add(coin2);
 
-                    // Abstract Tree
-                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 1), new THREE.MeshStandardMaterial({ color: 0x553311 }));
+                    // Tree icon
+                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.5), new THREE.MeshStandardMaterial({ color: 0x554433 }));
                     trunk.rotation.x = Math.PI / 2;
                     trunk.position.y = -0.5;
                     half2.add(trunk);
+                    const leaves = new THREE.Mesh(new THREE.ConeGeometry(1, 2, 8), new THREE.MeshStandardMaterial({ color: 0x228822 }));
+                    leaves.rotation.x = Math.PI / 2;
+                    leaves.position.y = -1.5;
+                    half2.add(leaves);
 
-                    // Positioning
-                    half1.position.x = -0.2;
-                    half2.position.x = 0.2;
+                    half1.position.x = -0.5;
+                    half2.position.x = 0.5;
                     group.add(half1);
                     group.add(half2);
 
-                    // Interaction
-                    let holding = false;
-                    let won = false;
-
-                    // Raycaster for drag needs to be added to update loop or event listeners
-                    // Simplified: Mouse move rotates half1 if holding
-
-                    // Add Logic Hooks to the group user data for the main loop to use
-                    group.userData.update = (dt) => {
-                        if (won) {
-                            half1.rotation.z += dt;
-                            half2.rotation.z += dt;
-                            return;
-                        }
-                    };
-
-                    // Temporary mouse listeners for this specific level
-                    const onDown = (e) => { holding = true; };
-                    const onUp = () => { holding = false; checkWin(); };
+                    let holding = false, won = false;
+                    const onDown = () => holding = true;
+                    const onUp = () => holding = false;
                     const onMove = (e) => {
                         if (holding && !won) {
                             half1.rotation.z += e.movementX * 0.01;
+                            checkWin();
                         }
                     };
 
                     const checkWin = () => {
-                        const r1 = half1.rotation.z % (Math.PI * 2);
-                        const r2 = half2.rotation.z % (Math.PI * 2);
-                        // simple check, assumes initial flip. 
-                        // Just checking alignment of the flat sides roughly
-                        // Actually, let's just use a visual "snap"
-                        const diff = Math.abs(r1 - r2);
-                        // (Simplify logic: just win if close enough to "aligned" visual)
-                        // Real logic: half2 is flipped PI. So half1 needs to be PI away? No, half2 rot is PI.
-
-                        // Visual win:
-                        if (Math.abs(Math.sin(half1.rotation.z) - Math.sin(half2.rotation.z)) < 0.1) {
+                        const r1 = (half1.rotation.z % (Math.PI * 2));
+                        // Target is 0 effectively relative to half2's flat side
+                        if (Math.abs(Math.sin(r1)) < 0.1 && Math.cos(r1) > 0) {
                             won = true;
-                            this.bloomPass.strength = 3;
-                            this.bloomPass.threshold = 0;
-
-                            // Snap
+                            half1.rotation.z = 0;
                             half1.position.x = 0;
                             half2.position.x = 0;
+                            this.bloomPass.strength = 3;
+                            this.setInstructions("MEANING CONSOLIDATED: The arbitrary is now necessary.");
 
-                            const msg = document.createElement('div');
-                            msg.innerText = "MEANING CONSOLIDATED";
-                            msg.style.cssText = "position:absolute; top:40%; width:100%; text-align:center; color:gold; font-size:2em; font-family:Courier New; pointer-events:none;";
-                            document.body.appendChild(msg);
-                            setTimeout(() => msg.remove(), 3000);
+                            // Gold material
+                            const gold = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffaa00, emissiveIntensity: 0.5 });
+                            coin1.material = gold;
+                            coin2.material = gold;
                         }
                     };
 
                     window.addEventListener('mousedown', onDown);
                     window.addEventListener('mouseup', onUp);
                     window.addEventListener('mousemove', onMove);
-
                     group.userData.cleanup = () => {
                         window.removeEventListener('mousedown', onDown);
                         window.removeEventListener('mouseup', onUp);
@@ -482,71 +515,65 @@
                     };
                 });
 
-                // LEVEL 2: Peirce Redux
+                // PEIRCE
                 this.addLevel('peirce', (group) => {
-                    this.scene.background = new THREE.Color(0x000000);
+                    this.scene.background = new THREE.Color(0x050505);
+                    this.ambientLight.intensity = 0.8; // Brighter
+                    this.setInstructions("Connect the Triangle. Move the CYAN PRISMA to intercept the Red Laser.");
+                    document.getElementById('keys-hint').style.display = 'flex';
 
-                    // Object (The Real)
-                    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1), new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.9 }));
+                    // Rock
+                    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1), new THREE.MeshStandardMaterial({ color: 0x888888 }));
                     rock.position.set(-5, 0, -5);
                     group.add(rock);
 
-                    // Representamen (The Sign)
-                    const frame = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
-                    frame.position.set(5, 0, -5);
-                    frame.lookAt(0, 0, 0);
-                    group.add(frame);
+                    // Photo
+                    const photo = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+                    photo.position.set(5, 0, -5);
+                    group.add(photo);
 
-                    // Interpretant (The Mind) - Controllable
-                    const prisma = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.5, 4, 1, true), new THREE.MeshPhysicalMaterial({
-                        color: 0x00ffff, transmission: 0.9, opacity: 1, metalness: 0, roughness: 0, thicknes: 2
+                    // Prisma
+                    const prisma = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.5, 4), new THREE.MeshStandardMaterial({
+                        color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 0.5, transparent: true, opacity: 0.8
                     }));
                     prisma.position.set(0, 0, 5);
                     group.add(prisma);
 
-                    // Laser Beam
-                    const beamGeo = new THREE.CylinderGeometry(0.05, 0.05, 1);
+                    // Beams
+                    const beamGeo = new THREE.CylinderGeometry(0.1, 0.1, 1);
                     const beamMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
                     const beam1 = new THREE.Mesh(beamGeo, beamMat);
-                    beam1.geometry.translate(0, 0.5, 0); // Pivot at bottom
-                    beam1.rotation.x = Math.PI / 2;
+                    beam1.geometry.translate(0, 0.5, 0); beam1.rotation.x = Math.PI / 2;
                     group.add(beam1);
 
                     const beam2 = new THREE.Mesh(beamGeo, beamMat);
-                    beam2.geometry.translate(0, 0.5, 0);
-                    beam2.rotation.x = Math.PI / 2;
-                    beam2.visible = false;
+                    beam2.geometry.translate(0, 0.5, 0); beam2.rotation.x = Math.PI / 2; beam2.visible = false;
                     group.add(beam2);
 
-                    // Logic
                     let won = false;
                     group.userData.update = () => {
-                        // Beam 1 from Rock to Prisma
-                        const start = rock.position;
-                        const end = prisma.position;
-                        const dist = start.distanceTo(end);
-
-                        beam1.position.copy(start);
-                        beam1.lookAt(end);
+                        const dist = rock.position.distanceTo(prisma.position);
+                        beam1.position.copy(rock.position);
+                        beam1.lookAt(prisma.position);
                         beam1.rotateX(Math.PI / 2);
                         beam1.scale.set(1, dist, 1);
 
-                        // Win zone
-                        if (prisma.position.distanceTo(new THREE.Vector3(0, 0, -5)) < 1.5) {
+                        // Win Condition: Close to Z=-5 and X=0
+                        if (Math.abs(prisma.position.z - (-5)) < 1.5 && Math.abs(prisma.position.x) < 2) {
                             if (!won) {
                                 won = true;
-                                beamMat.color.set(0x00ff00);
+                                beamMat.color.setHex(0x00ff00);
                                 beam2.visible = true;
-                                // Connect beam 2
-                                const dist2 = prisma.position.distanceTo(frame.position);
+                                const d2 = prisma.position.distanceTo(photo.position);
                                 beam2.position.copy(prisma.position);
-                                beam2.lookAt(frame.position);
+                                beam2.lookAt(photo.position);
                                 beam2.rotateX(Math.PI / 2);
-                                beam2.scale.set(1, dist2, 1);
+                                beam2.scale.set(1, d2, 1);
+                                this.setInstructions("SEMIOSIS COMPLETED: Object -> Sign -> Interpretant");
                             }
                         } else {
                             won = false;
-                            beamMat.color.set(0xff0000);
+                            beamMat.color.setHex(0xff0000);
                             beam2.visible = false;
                         }
                     };
@@ -559,179 +586,160 @@
                         if (e.key === 'ArrowRight') prisma.position.x += s;
                     };
                     window.addEventListener('keydown', onKey);
-                    group.userData.cleanup = () => window.removeEventListener('keydown', onKey);
+                    group.userData.cleanup = () => {
+                        document.getElementById('keys-hint').style.display = 'none';
+                        window.removeEventListener('keydown', onKey);
+                    };
                 });
 
-                // LEVEL 3: Barthes Redux
+                // BARTHES
                 this.addLevel('barthes', (group) => {
                     this.scene.background = new THREE.Color(0x222222);
+                    this.setInstructions("Reveal the Myth. DRAG the LEVER on the RIGHT upwards to transform reality.");
 
-                    // Show Lever
                     const lever = document.getElementById('barthes-lever');
                     const handle = document.getElementById('lever-handle');
+                    const hint = document.getElementById('barthes-hint');
                     lever.style.display = 'block';
+                    hint.style.display = 'block';
 
-                    // Soldier Model (Primitives)
                     const soldier = new THREE.Group();
-                    const mat = new THREE.MeshStandardMaterial({ color: 0x556b2f, roughness: 0.8 });
-
-                    const body = new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 0.5), mat);
-                    const head = new THREE.Mesh(new THREE.SphereGeometry(0.4), mat);
-                    head.position.y = 1;
-                    soldier.add(body, head);
+                    const mat = new THREE.MeshStandardMaterial({ color: 0x445533, roughness: 0.8 });
+                    const b = new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 0.5), mat);
+                    const h = new THREE.Mesh(new THREE.SphereGeometry(0.4), mat);
+                    h.position.y = 1;
+                    soldier.add(b, h);
                     group.add(soldier);
 
-                    // Logic
-                    let mythValue = 0; // 0 to 1
-                    let isDragging = false;
-
-                    const onDown = (e) => { if (e.target === handle || e.target === lever) isDragging = true; };
-                    const onUp = () => isDragging = false;
-                    const onMove = (e) => {
-                        if (!isDragging) return;
+                    let val = 0;
+                    let drag = false;
+                    const onDown = (e) => {
+                        // Simplified lever interaction: click anywhere near lever
                         const rect = lever.getBoundingClientRect();
-                        const y = Math.max(0, Math.min(1, (rect.bottom - e.clientY) / rect.height));
-                        handle.style.height = (y * 100) + '%';
-                        mythValue = y;
+                        if (e.clientX > rect.left - 50) drag = true;
+                    };
+                    const onUp = () => drag = false;
+                    const onMove = (e) => {
+                        if (drag) {
+                            const rect = lever.getBoundingClientRect();
+                            val = 1 - Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+                            handle.style.height = (val * 100) + '%';
+                        }
                     };
 
                     window.addEventListener('mousedown', onDown);
-                    window.addEventListener('mousemove', onMove);
                     window.addEventListener('mouseup', onUp);
+                    window.addEventListener('mousemove', onMove);
 
                     group.userData.update = () => {
-                        // Transform Soldier
-                        const color = new THREE.Color(0x556b2f).lerp(new THREE.Color(0xffd700), mythValue);
-                        mat.color = color;
-                        mat.emissive = new THREE.Color(0xffaa00);
-                        mat.emissiveIntensity = mythValue * 2;
-                        mat.metalness = mythValue;
-                        mat.roughness = 1 - mythValue;
-
-                        document.getElementById('interaction-prompt').style.opacity = 1;
-                        document.getElementById('interaction-prompt').innerText = mythValue > 0.8 ? "MYTH: HEROIC" : "REALITY: SOLDIER";
+                        // Lerp Material
+                        const gold = new THREE.Color(0xffd700);
+                        const olive = new THREE.Color(0x445533);
+                        mat.color.lerpColors(olive, gold, val);
+                        mat.emissive.setHex(0xffaa00);
+                        mat.emissiveIntensity = val * 2;
+                        mat.metalness = val;
 
                         soldier.rotation.y += 0.01;
+
+                        if (val > 0.9) this.setInstructions("THE REALITY IS LOST. THE MYTH IS CONSUMED.");
+                        else this.setInstructions("Drag the lever to mythologize the soldier.");
                     };
 
                     group.userData.cleanup = () => {
                         lever.style.display = 'none';
+                        hint.style.display = 'none';
                         window.removeEventListener('mousedown', onDown);
-                        window.removeEventListener('mousemove', onMove);
                         window.removeEventListener('mouseup', onUp);
+                        window.removeEventListener('mousemove', onMove);
                     };
                 });
 
-                // LEVEL 4: Baudrillard Redux
+                // BAUDRILLARD
                 this.addLevel('baudrillard', (group) => {
-                    this.scene.background = new THREE.Color(0x87CEEB); // Fake sky
-                    this.scene.fog = new THREE.Fog(0x87CEEB, 1, 50);
+                    this.scene.background = new THREE.Color(0x87CEEB);
+                    this.setInstructions("Approach the Tower in the distance. Witness the degradation of the Real.");
 
-                    // Procedural Terrain Texture
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 256; canvas.height = 256;
-                    const ctx = canvas.getContext('2d');
-                    ctx.fillStyle = '#228b22'; ctx.fillRect(0, 0, 256, 256);
-                    ctx.fillStyle = '#8fbc8f';
-                    for (let i = 0; i < 500; i++) ctx.fillRect(Math.random() * 256, Math.random() * 256, 4, 4);
-                    const tex = new THREE.CanvasTexture(canvas);
-                    tex.magFilter = THREE.NearestFilter;
+                    const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshBasicMaterial({ color: 0x228b22 }));
+                    ground.rotation.x = -Math.PI / 2;
+                    group.add(ground);
 
-                    const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshBasicMaterial({ map: tex }));
-                    floor.rotation.x = -Math.PI / 2;
-                    group.add(floor);
+                    const tower = new THREE.Mesh(new THREE.BoxGeometry(6, 20, 6), new THREE.MeshBasicMaterial({ color: 0x555555 }));
+                    tower.position.set(0, 10, -50);
+                    group.add(tower);
 
-                    // The Simulacrum Building
-                    const building = new THREE.Mesh(
-                        new THREE.BoxGeometry(5, 15, 5),
-                        new THREE.MeshBasicMaterial({ color: 0xaaaaaa, wireframe: false })
-                    );
-                    building.position.set(0, 7.5, -40);
-                    group.add(building);
-
-                    // Matrix Rain Effect (Simple Particles)
+                    // Rain
                     const rainGeo = new THREE.BufferGeometry();
-                    const rainCount = 1000;
-                    const pos = new Float32Array(rainCount * 3);
-                    for (let i = 0; i < rainCount * 3; i++) pos[i] = (Math.random() - 0.5) * 100;
+                    const count = 2000;
+                    const pos = new Float32Array(count * 3);
+                    for (let i = 0; i < count * 3; i++) pos[i] = (Math.random() - 0.5) * 100;
                     rainGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
                     const rain = new THREE.Points(rainGeo, new THREE.PointsMaterial({ color: 0x00ff00, size: 0.2, transparent: true, opacity: 0 }));
                     group.add(rain);
 
                     group.userData.update = () => {
-                        // Move forward automatically slowly
-                        if (this.camera.position.z > -30) {
-                            this.camera.position.z -= 0.05;
-                        }
+                        this.camera.position.z -= 0.05; // Auto walk
+                        if (this.camera.position.z < -45) this.camera.position.z = -45;
 
-                        const dist = this.camera.position.distanceTo(building.position);
+                        const dist = this.camera.position.distanceTo(tower.position);
 
-                        if (dist < 20) {
-                            building.material.wireframe = true;
+                        if (dist < 30) {
                             this.scene.background.setHex(0x000000);
-                            floor.material.wireframe = true;
-                            floor.material.color.setHex(0x00ff00);
-                            rain.material.opacity = (20 - dist) / 10;
-
-                            // Jitter vertices?? No, too complex for now. Just glitch position
-                            if (Math.random() > 0.8) building.position.x = (Math.random() - 0.5);
+                            ground.material.wireframe = true;
+                            ground.material.color.setHex(0x00ff00);
+                            tower.material.wireframe = true;
+                            tower.material.color.setHex(0x00ff00);
+                            rain.material.opacity = (30 - dist) / 20;
+                            this.setInstructions("WELCOME TO THE DESERT OF THE REAL.");
+                        } else {
+                            this.setInstructions(`Distance to Simularcum: ${Math.floor(dist)}m`);
                         }
                     };
                 });
             }
 
-            addLevel(name, setupFn) {
-                this.levels[name] = setupFn;
-            }
+            addLevel(name, fn) { this.levels[name] = fn; }
 
             loadLevel(name) {
-                // Cleanup prev
                 if (this.currentLevelObject) {
                     if (this.currentLevelObject.userData.cleanup) this.currentLevelObject.userData.cleanup();
                     this.scene.remove(this.currentLevelObject);
                 }
-
                 this.currentLevelName = name;
                 this.currentLevelObject = new THREE.Group();
                 this.scene.add(this.currentLevelObject);
 
-                // Reset Camera
+                // Camera reset
                 if (name !== 'hub') {
-                    // Level cam
-                    this.camera.position.set(0, 5, 10);
+                    this.camera.position.set(0, 3, 10);
                     this.camera.lookAt(0, 0, 0);
                     document.getElementById('return-hint').style.display = 'block';
+                    this.controls.enabled = false; // Disable orbit in levels for focused interactions? Or keep enabled? 
+                    // Let's keep enabled but maybe restrict? Actually strict orbit is annoying for puzzles.
+                    // For Saussure: orbit ok. Peirce: top down better? Baudrillard: auto move.
+                    if (name === 'peirce') {
+                        this.camera.position.set(0, 10, 0);
+                        this.camera.lookAt(0, 0, 0);
+                    }
                 } else {
-                    // Hub cam
-                    this.camera.position.set(0, 5, 8);
-                    this.camera.lookAt(0, 0, 0);
+                    this.camera.position.set(0, 2, 8);
+                    this.camera.lookAt(0, 1, 0);
                     document.getElementById('return-hint').style.display = 'none';
-                    document.getElementById('barthes-lever').style.display = 'none';
+                    this.controls.enabled = true;
                 }
 
-                if (this.levels[name]) {
-                    this.levels[name](this.currentLevelObject);
-                }
+                if (this.levels[name]) this.levels[name](this.currentLevelObject);
             }
 
             animate() {
                 requestAnimationFrame(() => this.animate());
-
-                const time = Date.now() * 0.001;
-
-                // Animate Hub Portals
                 if (this.currentLevelName === 'hub') {
                     this.activeObjects.forEach(obj => {
-                        obj.position.y = obj.userData.floatY + Math.sin(time + obj.userData.phase) * 0.2;
+                        obj.position.y = obj.userData.floatY + Math.sin(Date.now() * 0.001 + obj.userData.phase) * 0.2;
                         obj.rotation.y += 0.01;
-                        obj.rotation.z += 0.005;
                     });
                 }
-
-                // Level Update Logic
-                if (this.currentLevelObject && this.currentLevelObject.userData.update) {
-                    this.currentLevelObject.userData.update(0.016);
-                }
+                if (this.currentLevelObject && this.currentLevelObject.userData.update) this.currentLevelObject.userData.update();
 
                 this.controls.update();
                 this.composer.render();
