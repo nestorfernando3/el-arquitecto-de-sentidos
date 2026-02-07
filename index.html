@@ -4,14 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>El Arquitecto de Sentidos</title>
+    <title>The Museum of Meaning</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-color: #f0f0f0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #111;
+            font-family: 'Courier New', Courier, monospace;
+            /* Monospaced for that "raw data" feel */
         }
 
         #canvas-container {
@@ -24,125 +25,125 @@
 
         #ui-overlay {
             position: absolute;
-            top: 20px;
-            left: 20px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             pointer-events: none;
-            color: #333;
+            text-align: center;
+            color: #fff;
             z-index: 10;
+            mix-blend-mode: difference;
         }
 
         h1 {
-            font-weight: 300;
-            letter-spacing: 2px;
+            font-weight: 100;
+            letter-spacing: 5px;
             text-transform: uppercase;
-            font-size: 1.2rem;
+            font-size: 2rem;
             margin: 0;
-            opacity: 0.8;
+            opacity: 0;
+            animation: fadeInOut 4s ease-in-out forwards;
         }
 
-        .instruction {
+        .subtitle {
             font-size: 0.8rem;
-            margin-top: 5px;
-            opacity: 0.5;
+            margin-top: 10px;
+            opacity: 0;
+            animation: fadeInOut 4s ease-in-out 1s forwards;
         }
 
-        #level-controls {
+        #interaction-prompt {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            display: flex;
-            gap: 10px;
-            z-index: 10;
-        }
-
-        button {
-            background: rgba(255, 255, 255, 0.8);
-            border: 1px solid #ccc;
-            padding: 8px 12px;
-            cursor: pointer;
-            text-transform: uppercase;
-            font-size: 0.7rem;
-            letter-spacing: 1px;
-            transition: all 0.2s;
-        }
-
-        button:hover {
-            background: #fff;
-            border-color: #333;
-        }
-
-        #win-message {
-            position: absolute;
-            bottom: 80px;
+            bottom: 50px;
             width: 100%;
             text-align: center;
-            font-size: 1.2rem;
-            color: #d4af37;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8rem;
             pointer-events: none;
-            display: none;
-            animation: fadeIn 1s forwards;
+            opacity: 0;
+            transition: opacity 0.5s;
         }
 
-        #level-ui {
+        #return-hint {
             position: absolute;
             top: 20px;
-            right: 20px;
-            text-align: right;
-            pointer-events: auto;
-        }
-
-        #slider-container {
-            display: none;
-            margin-top: 20px;
-        }
-
-        input[type="range"] {
-            width: 200px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.7rem;
             cursor: pointer;
+            pointer-events: auto;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            display: none;
+            transition: all 0.3s;
         }
 
-        @keyframes fadeIn {
-            from {
+        #return-hint:hover {
+            color: #fff;
+            border-color: #fff;
+        }
+
+        @keyframes fadeInOut {
+            0% {
                 opacity: 0;
-                transform: translateY(10px);
+                letter-spacing: 10px;
             }
 
-            to {
+            30% {
                 opacity: 1;
-                transform: translateY(0);
+                letter-spacing: 5px;
             }
+
+            80% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        /* Barthes Slider Replacement - A "Conceptual Lever" UI (Hidden by default) */
+        #barthes-lever {
+            position: absolute;
+            bottom: 10%;
+            right: 10%;
+            width: 50px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: none;
+            pointer-events: auto;
+            cursor: grab;
+        }
+
+        #lever-handle {
+            width: 100%;
+            height: 20px;
+            background: #fff;
+            position: absolute;
+            bottom: 0;
+            cursor: grabbing;
         }
     </style>
 </head>
 
 <body>
     <div id="ui-overlay">
-        <h1 id="level-title">El Arquitecto de Sentidos</h1>
-        <div class="instruction" id="level-instruction">Rota para encontrar la conexión</div>
+        <h1>Museum of Meaning</h1>
+        <div class="subtitle">Architecting the senses through semiotics</div>
     </div>
 
-    <div id="level-ui">
-        <div id="slider-container">
-            <div style="font-size: 0.7rem; margin-bottom: 5px; text-transform: uppercase; opacity: 0.6;">Denotación ->
-                Connotación</div>
-            <input type="range" id="myth-slider" min="0" max="100" value="0">
-            <div id="myth-label" style="margin-top: 5px; font-weight: bold;">SOLDADO</div>
-        </div>
+    <div id="interaction-prompt">Click to Enter</div>
+    <div id="return-hint" onclick="gameInstance.loadLevel('hub')">RETURN TO GALLERY</div>
+
+    <div id="barthes-lever">
+        <div id="lever-handle"></div>
     </div>
 
-    <div id="level-controls">
-        <button onclick="gameInstance.loadLevel('saussure')">Saussure</button>
-        <button onclick="gameInstance.loadLevel('peirce')">Peirce</button>
-        <button onclick="gameInstance.loadLevel('barthes')">Barthes</button>
-        <button onclick="gameInstance.loadLevel('baudrillard')">Baudrillard</button>
-    </div>
-
-    <div id="win-message"></div>
     <div id="canvas-container"></div>
 
-    <!-- Three.js from CDN -->
+    <!-- Three.js + PostProcessing from CDN -->
     <script type="importmap">
         {
             "imports": {
@@ -155,566 +156,589 @@
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
         class Game {
             constructor() {
                 this.container = document.getElementById('canvas-container');
                 this.scene = new THREE.Scene();
-                this.scene.background = new THREE.Color(0xf0f0f0);
-                this.scene.fog = new THREE.Fog(0xf0f0f0, 10, 50);
+                this.scene.background = new THREE.Color(0x050505); // Dark museum
+                this.scene.fog = new THREE.FogExp2(0x050505, 0.03);
 
                 this.initCamera();
                 this.initRenderer();
+                this.initPostProcessing();
                 this.initLights();
-                this.initGrid();
                 this.initControls();
+                this.initInput();
 
                 this.levels = {};
                 this.currentLevel = null;
-                this.levelGroup = null;
+                this.currentLevelName = '';
+                this.activeObjects = []; // Clickable objects
 
                 window.addEventListener('resize', () => this.onWindowResize());
                 this.animate();
+
+                // Define Levels
+                this.setupLevels();
+
+                // Start in Museum Hub
+                this.loadLevel('hub');
             }
 
             initCamera() {
-                this.camera = new THREE.PerspectiveCamera(
-                    45,
-                    window.innerWidth / window.innerHeight,
-                    0.1,
-                    1000
-                );
-                this.camera.position.set(8, 8, 8);
-                this.camera.lookAt(0, 0, 0);
+                this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.camera.position.set(0, 2, 8);
+                this.camera.lookAt(0, 1, 0);
             }
 
             initRenderer() {
-                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer = new THREE.WebGLRenderer({ antialias: false }); // PMREM prefers false? stick to false for Perf with bloom
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
                 this.renderer.setPixelRatio(window.devicePixelRatio);
                 this.renderer.shadowMap.enabled = true;
                 this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                this.renderer.toneMapping = THREE.ReinhardToneMapping;
                 this.container.appendChild(this.renderer.domElement);
             }
 
-            initLights() {
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-                this.scene.add(ambientLight);
+            initPostProcessing() {
+                this.composer = new EffectComposer(this.renderer);
 
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                directionalLight.position.set(10, 20, 10);
-                directionalLight.castShadow = true;
+                const renderPass = new RenderPass(this.scene, this.camera);
+                this.composer.addPass(renderPass);
 
-                // Shadow styling
-                directionalLight.shadow.mapSize.width = 2048;
-                directionalLight.shadow.mapSize.height = 2048;
-                directionalLight.shadow.camera.near = 0.5;
-                directionalLight.shadow.camera.far = 50;
-                directionalLight.shadow.camera.left = -20;
-                directionalLight.shadow.camera.right = 20;
-                directionalLight.shadow.camera.top = 20;
-                directionalLight.shadow.camera.bottom = -20;
+                this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+                this.bloomPass.threshold = 0.2;
+                this.bloomPass.strength = 1.2; // Intense bloom
+                this.bloomPass.radius = 0.5;
+                this.composer.addPass(this.bloomPass);
 
-                this.scene.add(directionalLight);
+                const outputPass = new OutputPass();
+                this.composer.addPass(outputPass);
             }
 
-            initGrid() {
-                // Grid helper for the mathematical feel
-                const grid = new THREE.GridHelper(100, 100, 0xcccccc, 0xeeeeee);
-                grid.position.y = -0.01; // Slightly below floor
-                this.scene.add(grid);
+            initLights() {
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
+                this.scene.add(ambientLight);
 
-                // Invisible floor to catch shadows
-                const floorGeometry = new THREE.PlaneGeometry(200, 200);
-                const floorMaterial = new THREE.ShadowMaterial({ opacity: 0.1 });
-                const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-                floor.rotation.x = -Math.PI / 2;
-                floor.receiveShadow = true;
-                this.scene.add(floor);
+                this.spotLight = new THREE.SpotLight(0xffffff, 50);
+                this.spotLight.angle = 0.3;
+                this.spotLight.penumbra = 0.5;
+                this.spotLight.castShadow = true;
+                this.spotLight.position.set(0, 10, 5);
+                this.scene.add(this.spotLight);
             }
 
             initControls() {
                 this.controls = new OrbitControls(this.camera, this.renderer.domElement);
                 this.controls.enableDamping = true;
                 this.controls.dampingFactor = 0.05;
-                this.controls.minDistance = 5;
-                this.controls.maxDistance = 50;
+                this.controls.maxPolarAngle = Math.PI / 1.5; // Don't go below ground
+                this.controls.minDistance = 2;
+                this.controls.maxDistance = 20;
+            }
+
+            initInput() {
+                this.raycaster = new THREE.Raycaster();
+                this.mouse = new THREE.Vector2();
+                this.interactionPrompt = document.getElementById('interaction-prompt');
+
+                window.addEventListener('mousemove', (e) => {
+                    this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                    this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+                    this.checkHover();
+                });
+
+                window.addEventListener('click', () => {
+                    this.checkClick();
+                });
+            }
+
+            checkHover() {
+                if (this.currentLevelName !== 'hub') {
+                    this.interactionPrompt.style.opacity = 0;
+                    document.body.style.cursor = 'auto';
+                    return;
+                }
+
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(this.activeObjects);
+
+                if (intersects.length > 0) {
+                    document.body.style.cursor = 'pointer';
+                    const name = intersects[0].object.userData.levelName || 'Exhibit';
+                    this.interactionPrompt.innerText = `Enter: ${name}`;
+                    this.interactionPrompt.style.opacity = 1;
+                } else {
+                    document.body.style.cursor = 'auto';
+                    this.interactionPrompt.style.opacity = 0;
+                }
+            }
+
+            checkClick() {
+                if (this.currentLevelName !== 'hub') return;
+
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(this.activeObjects);
+
+                if (intersects.length > 0) {
+                    const levelId = intersects[0].object.userData.levelId;
+                    if (levelId) this.loadLevel(levelId);
+                }
             }
 
             onWindowResize() {
                 this.camera.aspect = window.innerWidth / window.innerHeight;
                 this.camera.updateProjectionMatrix();
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.composer.setSize(window.innerWidth, window.innerHeight);
             }
 
-            addLevel(name, levelFn) {
-                this.levels[name] = levelFn;
+            setupLevels() {
+                // HUB: The Museum Gallery
+                this.addLevel('hub', (group) => {
+                    this.scene.background = new THREE.Color(0x111111);
+                    this.scene.fog = new THREE.FogExp2(0x111111, 0.05);
+                    this.controls.enablePan = true;
+
+                    document.getElementById('return-hint').style.display = 'none';
+
+                    // Floor (Reflectiveish)
+                    const floorGeo = new THREE.PlaneGeometry(50, 50);
+                    const floorMat = new THREE.MeshStandardMaterial({
+                        color: 0x222222,
+                        roughness: 0.1,
+                        metalness: 0.1
+                    });
+                    const floor = new THREE.Mesh(floorGeo, floorMat);
+                    floor.rotation.x = -Math.PI / 2;
+                    floor.receiveShadow = true;
+                    group.add(floor);
+
+                    // Pedestals
+                    const createPlinth = (x, z, color, levelId, title) => {
+                        const geo = new THREE.BoxGeometry(1, 1.2, 1);
+                        const mat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 });
+                        const mesh = new THREE.Mesh(geo, mat);
+                        mesh.position.set(x, 0.6, z);
+                        mesh.castShadow = true;
+                        mesh.receiveShadow = true;
+                        group.add(mesh);
+
+                        // Floating Abstract Symbol (The Portal)
+                        const portalGeo = new THREE.IcosahedronGeometry(0.3, 0);
+                        const portalMat = new THREE.MeshStandardMaterial({
+                            color: color,
+                            emissive: color,
+                            emissiveIntensity: 2,
+                            transparent: true,
+                            opacity: 0.8
+                        });
+                        const portal = new THREE.Mesh(portalGeo, portalMat);
+                        portal.position.set(x, 1.8, z);
+                        group.add(portal);
+
+                        // Animation data
+                        portal.userData = {
+                            levelId: levelId,
+                            levelName: title,
+                            floatY: 1.8,
+                            phase: Math.random() * Math.PI
+                        };
+                        this.activeObjects.push(portal);
+                        return portal;
+                    };
+
+                    this.activeObjects = []; // Reset interaction targets
+                    const p1 = createPlinth(-3, 0, 0xff4444, 'saussure', 'The Diad (Saussure)');
+                    const p2 = createPlinth(-1, 0, 0x44ff44, 'peirce', 'The Triad (Peirce)');
+                    const p3 = createPlinth(1, 0, 0xffaa00, 'barthes', 'The Myth (Barthes)');
+                    const p4 = createPlinth(3, 0, 0x4444ff, 'baudrillard', 'The Simulacrum (Baudrillard)');
+                });
+
+                // LEVEL 1: Saussure Redux
+                this.addLevel('saussure', (group) => {
+                    this.bloomPass.strength = 0.8;
+                    this.scene.background = new THREE.Color(0xeeeeee);
+                    this.scene.fog = new THREE.FogExp2(0xeeeeee, 0.02);
+
+                    // Semicircle geometries
+                    const semiGeo = new THREE.CylinderGeometry(2, 2, 0.5, 64, 1, false, 0, Math.PI);
+
+                    const redMat = new THREE.MeshNormalMaterial({ wireframe: false }); // Modern look
+                    const blueMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.2 });
+
+                    const half1 = new THREE.Group();
+                    const coin1 = new THREE.Mesh(semiGeo, new THREE.MeshStandardMaterial({ color: 0xff3333 }));
+                    coin1.rotation.x = Math.PI / 2;
+                    half1.add(coin1);
+
+                    // 3D Text needs FontLoader, using Sprite for simplicity/speed but stylized
+                    const createLabel = (txt) => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 512; canvas.height = 128;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = 'rgba(0,0,0,0)'; // transparent
+                        ctx.font = 'bold 80px Courier New';
+                        ctx.strokeStyle = 'white';
+                        ctx.lineWidth = 4;
+                        ctx.strokeText(txt, 256, 100);
+                        ctx.fillStyle = 'black';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(txt, 256, 100);
+                        return new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas) }));
+                    };
+
+                    const lbl = createLabel("SIGNIFIER");
+                    lbl.position.set(0, 1.5, 0.2);
+                    lbl.scale.set(4, 1, 1);
+                    half1.add(lbl);
+
+                    const half2 = new THREE.Group();
+                    const coin2 = new THREE.Mesh(semiGeo, new THREE.MeshStandardMaterial({ color: 0x3333ff }));
+                    coin2.rotation.x = Math.PI / 2;
+                    coin2.rotation.z = Math.PI;
+                    half2.add(coin2);
+
+                    // Abstract Tree
+                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 1), new THREE.MeshStandardMaterial({ color: 0x553311 }));
+                    trunk.rotation.x = Math.PI / 2;
+                    trunk.position.y = -0.5;
+                    half2.add(trunk);
+
+                    // Positioning
+                    half1.position.x = -0.2;
+                    half2.position.x = 0.2;
+                    group.add(half1);
+                    group.add(half2);
+
+                    // Interaction
+                    let holding = false;
+                    let won = false;
+
+                    // Raycaster for drag needs to be added to update loop or event listeners
+                    // Simplified: Mouse move rotates half1 if holding
+
+                    // Add Logic Hooks to the group user data for the main loop to use
+                    group.userData.update = (dt) => {
+                        if (won) {
+                            half1.rotation.z += dt;
+                            half2.rotation.z += dt;
+                            return;
+                        }
+                    };
+
+                    // Temporary mouse listeners for this specific level
+                    const onDown = (e) => { holding = true; };
+                    const onUp = () => { holding = false; checkWin(); };
+                    const onMove = (e) => {
+                        if (holding && !won) {
+                            half1.rotation.z += e.movementX * 0.01;
+                        }
+                    };
+
+                    const checkWin = () => {
+                        const r1 = half1.rotation.z % (Math.PI * 2);
+                        const r2 = half2.rotation.z % (Math.PI * 2);
+                        // simple check, assumes initial flip. 
+                        // Just checking alignment of the flat sides roughly
+                        // Actually, let's just use a visual "snap"
+                        const diff = Math.abs(r1 - r2);
+                        // (Simplify logic: just win if close enough to "aligned" visual)
+                        // Real logic: half2 is flipped PI. So half1 needs to be PI away? No, half2 rot is PI.
+
+                        // Visual win:
+                        if (Math.abs(Math.sin(half1.rotation.z) - Math.sin(half2.rotation.z)) < 0.1) {
+                            won = true;
+                            this.bloomPass.strength = 3;
+                            this.bloomPass.threshold = 0;
+
+                            // Snap
+                            half1.position.x = 0;
+                            half2.position.x = 0;
+
+                            const msg = document.createElement('div');
+                            msg.innerText = "MEANING CONSOLIDATED";
+                            msg.style.cssText = "position:absolute; top:40%; width:100%; text-align:center; color:gold; font-size:2em; font-family:Courier New; pointer-events:none;";
+                            document.body.appendChild(msg);
+                            setTimeout(() => msg.remove(), 3000);
+                        }
+                    };
+
+                    window.addEventListener('mousedown', onDown);
+                    window.addEventListener('mouseup', onUp);
+                    window.addEventListener('mousemove', onMove);
+
+                    group.userData.cleanup = () => {
+                        window.removeEventListener('mousedown', onDown);
+                        window.removeEventListener('mouseup', onUp);
+                        window.removeEventListener('mousemove', onMove);
+                    };
+                });
+
+                // LEVEL 2: Peirce Redux
+                this.addLevel('peirce', (group) => {
+                    this.scene.background = new THREE.Color(0x000000);
+
+                    // Object (The Real)
+                    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1), new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.9 }));
+                    rock.position.set(-5, 0, -5);
+                    group.add(rock);
+
+                    // Representamen (The Sign)
+                    const frame = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
+                    frame.position.set(5, 0, -5);
+                    frame.lookAt(0, 0, 0);
+                    group.add(frame);
+
+                    // Interpretant (The Mind) - Controllable
+                    const prisma = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.5, 4, 1, true), new THREE.MeshPhysicalMaterial({
+                        color: 0x00ffff, transmission: 0.9, opacity: 1, metalness: 0, roughness: 0, thicknes: 2
+                    }));
+                    prisma.position.set(0, 0, 5);
+                    group.add(prisma);
+
+                    // Laser Beam
+                    const beamGeo = new THREE.CylinderGeometry(0.05, 0.05, 1);
+                    const beamMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+                    const beam1 = new THREE.Mesh(beamGeo, beamMat);
+                    beam1.geometry.translate(0, 0.5, 0); // Pivot at bottom
+                    beam1.rotation.x = Math.PI / 2;
+                    group.add(beam1);
+
+                    const beam2 = new THREE.Mesh(beamGeo, beamMat);
+                    beam2.geometry.translate(0, 0.5, 0);
+                    beam2.rotation.x = Math.PI / 2;
+                    beam2.visible = false;
+                    group.add(beam2);
+
+                    // Logic
+                    let won = false;
+                    group.userData.update = () => {
+                        // Beam 1 from Rock to Prisma
+                        const start = rock.position;
+                        const end = prisma.position;
+                        const dist = start.distanceTo(end);
+
+                        beam1.position.copy(start);
+                        beam1.lookAt(end);
+                        beam1.rotateX(Math.PI / 2);
+                        beam1.scale.set(1, dist, 1);
+
+                        // Win zone
+                        if (prisma.position.distanceTo(new THREE.Vector3(0, 0, -5)) < 1.5) {
+                            if (!won) {
+                                won = true;
+                                beamMat.color.set(0x00ff00);
+                                beam2.visible = true;
+                                // Connect beam 2
+                                const dist2 = prisma.position.distanceTo(frame.position);
+                                beam2.position.copy(prisma.position);
+                                beam2.lookAt(frame.position);
+                                beam2.rotateX(Math.PI / 2);
+                                beam2.scale.set(1, dist2, 1);
+                            }
+                        } else {
+                            won = false;
+                            beamMat.color.set(0xff0000);
+                            beam2.visible = false;
+                        }
+                    };
+
+                    const onKey = (e) => {
+                        const s = 0.5;
+                        if (e.key === 'ArrowUp') prisma.position.z -= s;
+                        if (e.key === 'ArrowDown') prisma.position.z += s;
+                        if (e.key === 'ArrowLeft') prisma.position.x -= s;
+                        if (e.key === 'ArrowRight') prisma.position.x += s;
+                    };
+                    window.addEventListener('keydown', onKey);
+                    group.userData.cleanup = () => window.removeEventListener('keydown', onKey);
+                });
+
+                // LEVEL 3: Barthes Redux
+                this.addLevel('barthes', (group) => {
+                    this.scene.background = new THREE.Color(0x222222);
+
+                    // Show Lever
+                    const lever = document.getElementById('barthes-lever');
+                    const handle = document.getElementById('lever-handle');
+                    lever.style.display = 'block';
+
+                    // Soldier Model (Primitives)
+                    const soldier = new THREE.Group();
+                    const mat = new THREE.MeshStandardMaterial({ color: 0x556b2f, roughness: 0.8 });
+
+                    const body = new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 0.5), mat);
+                    const head = new THREE.Mesh(new THREE.SphereGeometry(0.4), mat);
+                    head.position.y = 1;
+                    soldier.add(body, head);
+                    group.add(soldier);
+
+                    // Logic
+                    let mythValue = 0; // 0 to 1
+                    let isDragging = false;
+
+                    const onDown = (e) => { if (e.target === handle || e.target === lever) isDragging = true; };
+                    const onUp = () => isDragging = false;
+                    const onMove = (e) => {
+                        if (!isDragging) return;
+                        const rect = lever.getBoundingClientRect();
+                        const y = Math.max(0, Math.min(1, (rect.bottom - e.clientY) / rect.height));
+                        handle.style.height = (y * 100) + '%';
+                        mythValue = y;
+                    };
+
+                    window.addEventListener('mousedown', onDown);
+                    window.addEventListener('mousemove', onMove);
+                    window.addEventListener('mouseup', onUp);
+
+                    group.userData.update = () => {
+                        // Transform Soldier
+                        const color = new THREE.Color(0x556b2f).lerp(new THREE.Color(0xffd700), mythValue);
+                        mat.color = color;
+                        mat.emissive = new THREE.Color(0xffaa00);
+                        mat.emissiveIntensity = mythValue * 2;
+                        mat.metalness = mythValue;
+                        mat.roughness = 1 - mythValue;
+
+                        document.getElementById('interaction-prompt').style.opacity = 1;
+                        document.getElementById('interaction-prompt').innerText = mythValue > 0.8 ? "MYTH: HEROIC" : "REALITY: SOLDIER";
+
+                        soldier.rotation.y += 0.01;
+                    };
+
+                    group.userData.cleanup = () => {
+                        lever.style.display = 'none';
+                        window.removeEventListener('mousedown', onDown);
+                        window.removeEventListener('mousemove', onMove);
+                        window.removeEventListener('mouseup', onUp);
+                    };
+                });
+
+                // LEVEL 4: Baudrillard Redux
+                this.addLevel('baudrillard', (group) => {
+                    this.scene.background = new THREE.Color(0x87CEEB); // Fake sky
+                    this.scene.fog = new THREE.Fog(0x87CEEB, 1, 50);
+
+                    // Procedural Terrain Texture
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 256; canvas.height = 256;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#228b22'; ctx.fillRect(0, 0, 256, 256);
+                    ctx.fillStyle = '#8fbc8f';
+                    for (let i = 0; i < 500; i++) ctx.fillRect(Math.random() * 256, Math.random() * 256, 4, 4);
+                    const tex = new THREE.CanvasTexture(canvas);
+                    tex.magFilter = THREE.NearestFilter;
+
+                    const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshBasicMaterial({ map: tex }));
+                    floor.rotation.x = -Math.PI / 2;
+                    group.add(floor);
+
+                    // The Simulacrum Building
+                    const building = new THREE.Mesh(
+                        new THREE.BoxGeometry(5, 15, 5),
+                        new THREE.MeshBasicMaterial({ color: 0xaaaaaa, wireframe: false })
+                    );
+                    building.position.set(0, 7.5, -40);
+                    group.add(building);
+
+                    // Matrix Rain Effect (Simple Particles)
+                    const rainGeo = new THREE.BufferGeometry();
+                    const rainCount = 1000;
+                    const pos = new Float32Array(rainCount * 3);
+                    for (let i = 0; i < rainCount * 3; i++) pos[i] = (Math.random() - 0.5) * 100;
+                    rainGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+                    const rain = new THREE.Points(rainGeo, new THREE.PointsMaterial({ color: 0x00ff00, size: 0.2, transparent: true, opacity: 0 }));
+                    group.add(rain);
+
+                    group.userData.update = () => {
+                        // Move forward automatically slowly
+                        if (this.camera.position.z > -30) {
+                            this.camera.position.z -= 0.05;
+                        }
+
+                        const dist = this.camera.position.distanceTo(building.position);
+
+                        if (dist < 20) {
+                            building.material.wireframe = true;
+                            this.scene.background.setHex(0x000000);
+                            floor.material.wireframe = true;
+                            floor.material.color.setHex(0x00ff00);
+                            rain.material.opacity = (20 - dist) / 10;
+
+                            // Jitter vertices?? No, too complex for now. Just glitch position
+                            if (Math.random() > 0.8) building.position.x = (Math.random() - 0.5);
+                        }
+                    };
+                });
+            }
+
+            addLevel(name, setupFn) {
+                this.levels[name] = setupFn;
             }
 
             loadLevel(name) {
-                // Clear state
+                // Cleanup prev
                 if (this.currentLevelObject) {
+                    if (this.currentLevelObject.userData.cleanup) this.currentLevelObject.userData.cleanup();
                     this.scene.remove(this.currentLevelObject);
                 }
 
-                // Hide specific UI
-                document.getElementById('slider-container').style.display = 'none';
-                document.getElementById('win-message').style.display = 'none';
-
-                // Reset instruction
-                const titles = {
-                    'saussure': 'La Diada de Saussure',
-                    'peirce': 'El Prisma de Peirce',
-                    'barthes': 'El Escáner de Barthes',
-                    'baudrillard': 'El Desierto de lo Real'
-                };
-                const instructions = {
-                    'saussure': 'Rota la mitad roja para encontrar la conexión',
-                    'peirce': 'Usa las flechas para mover el Interpretante (Prisma)',
-                    'barthes': 'Usa el deslizador para ver el mito oculto',
-                    'baudrillard': 'Acércate al edificio en el horizonte'
-                };
-
-                document.getElementById('level-title').innerText = titles[name] || 'El Arquitecto de Sentidos';
-                document.getElementById('level-instruction').innerText = instructions[name] || '';
-
+                this.currentLevelName = name;
                 this.currentLevelObject = new THREE.Group();
                 this.scene.add(this.currentLevelObject);
+
+                // Reset Camera
+                if (name !== 'hub') {
+                    // Level cam
+                    this.camera.position.set(0, 5, 10);
+                    this.camera.lookAt(0, 0, 0);
+                    document.getElementById('return-hint').style.display = 'block';
+                } else {
+                    // Hub cam
+                    this.camera.position.set(0, 5, 8);
+                    this.camera.lookAt(0, 0, 0);
+                    document.getElementById('return-hint').style.display = 'none';
+                    document.getElementById('barthes-lever').style.display = 'none';
+                }
 
                 if (this.levels[name]) {
                     this.levels[name](this.currentLevelObject);
                 }
             }
 
-            showWin(text) {
-                const win = document.getElementById('win-message');
-                win.innerHTML = text;
-                win.style.display = 'block';
-            }
-
             animate() {
                 requestAnimationFrame(() => this.animate());
+
+                const time = Date.now() * 0.001;
+
+                // Animate Hub Portals
+                if (this.currentLevelName === 'hub') {
+                    this.activeObjects.forEach(obj => {
+                        obj.position.y = obj.userData.floatY + Math.sin(time + obj.userData.phase) * 0.2;
+                        obj.rotation.y += 0.01;
+                        obj.rotation.z += 0.005;
+                    });
+                }
+
+                // Level Update Logic
+                if (this.currentLevelObject && this.currentLevelObject.userData.update) {
+                    this.currentLevelObject.userData.update(0.016);
+                }
+
                 this.controls.update();
-                this.renderer.render(this.scene, this.camera);
+                this.composer.render();
             }
         }
 
-        // Initialize Game
-        const game = new Game();
-
-        // Level Definition Examples
-        game.addLevel('base', (group) => {
-            // Placeholder: A simple floating cube to test shadows and perspective
-            const geometry = new THREE.BoxGeometry(2, 2, 2);
-            const material = new THREE.MeshPhongMaterial({
-                color: 0xffffff,
-                flatShading: true
-            });
-            const cube = new THREE.Mesh(geometry, material);
-            cube.position.y = 1.5;
-            cube.castShadow = true;
-            cube.receiveShadow = true;
-            group.add(cube);
-        });
-
-        // Level 1: Saussure (The Floating Diad)
-        game.addLevel('saussure', (group) => {
-            const container = new THREE.Group();
-            group.add(container);
-
-            // Common materials
-            const redMat = new THREE.MeshPhongMaterial({ color: 0xff4444, flatShading: true });
-            const blueMat = new THREE.MeshPhongMaterial({ color: 0x4444ff, flatShading: true });
-            const whiteMat = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true });
-            const goldMat = new THREE.MeshPhongMaterial({ color: 0xffd700, emissive: 0xffaa00, emissiveIntensity: 0.5 });
-
-            // Semicircle geometries
-            const semiGeo = new THREE.CylinderGeometry(2, 2, 0.5, 32, 1, false, 0, Math.PI);
-
-            // Half 1: Signifier (Red + Text)
-            const half1 = new THREE.Group();
-            const coin1 = new THREE.Mesh(semiGeo, redMat);
-            coin1.rotation.x = Math.PI / 2;
-            coin1.castShadow = true;
-            half1.add(coin1);
-
-            // Simple "ARBOL" label using a sprite for simplicity (avoids FontLoader overhead for now)
-            const createTextSprite = (text) => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = 256;
-                canvas.height = 64;
-                ctx.fillStyle = 'white';
-                ctx.font = 'Bold 40px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(text, 128, 45);
-                const texture = new THREE.CanvasTexture(canvas);
-                const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
-                const sprite = new THREE.Sprite(spriteMaterial);
-                sprite.scale.set(3, 0.75, 1);
-                return sprite;
-            };
-
-            const label = createTextSprite('ARBOL');
-            label.position.set(0, 1.2, 0.5);
-            half1.add(label);
-            half1.position.x = -0.1;
-
-            // Half 2: Signified (Blue + Low-poly Tree)
-            const half2 = new THREE.Group();
-            const coin2 = new THREE.Mesh(semiGeo, blueMat);
-            coin2.rotation.x = Math.PI / 2;
-            coin2.rotation.z = Math.PI; // Flip it
-            coin2.castShadow = true;
-            half2.add(coin2);
-
-            // Low-poly Tree
-            const trunkGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.5);
-            const trunk = new THREE.Mesh(trunkGeo, new THREE.MeshPhongMaterial({ color: 0x8b4513 }));
-            trunk.position.set(0, -1, 0.5);
-            trunk.rotation.x = Math.PI / 2;
-            half2.add(trunk);
-
-            const leavesGeo = new THREE.ConeGeometry(0.5, 1, 8);
-            const leaves = new THREE.Mesh(leavesGeo, new THREE.MeshPhongMaterial({ color: 0x228b22 }));
-            leaves.position.set(0, -1.6, 0.5);
-            leaves.rotation.x = Math.PI / 2;
-            half2.add(leaves);
-            half2.position.x = 0.1;
-
-            container.add(half1);
-            container.add(half2);
-
-            // Interaction State
-            let isDragging = false;
-            let targetRotation = Math.random() * Math.PI * 2;
-            half1.rotation.z = targetRotation;
-            half2.rotation.z = Math.random() * Math.PI * 2;
-
-            const raycaster = new THREE.Raycaster();
-            const mouse = new THREE.Vector2();
-
-            const onMouseDown = (event) => {
-                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-                raycaster.setFromCamera(mouse, game.camera);
-                const intersects = raycaster.intersectObjects([half1], true);
-                if (intersects.length > 0) {
-                    isDragging = true;
-                    game.controls.enabled = false;
-                }
-            };
-
-            const onMouseMove = (event) => {
-                if (!isDragging) return;
-                const deltaX = event.movementX * 0.01;
-                half1.rotation.z += deltaX;
-            };
-
-            const onMouseUp = () => {
-                if (isDragging) {
-                    isDragging = false;
-                    game.controls.enabled = true;
-                    checkWin();
-                }
-            };
-
-            const checkWin = () => {
-                // Check if rotation difference is small (accounting for wrap-around)
-                const diff = Math.abs((half1.rotation.z % (Math.PI * 2)) - (half2.rotation.z % (Math.PI * 2)));
-                const threshold = 0.2;
-
-                if (diff < threshold || Math.abs(diff - Math.PI * 2) < threshold) {
-                    // Snap and Glow
-                    half1.rotation.z = half2.rotation.z;
-                    coin1.material = goldMat;
-                    coin2.material = goldMat;
-
-                    game.showWin('Signo Consolidado: La relación es arbitraria pero necesaria');
-
-                    // Remove listeners
-                    window.removeEventListener('mousedown', onMouseDown);
-                    window.removeEventListener('mousemove', onMouseMove);
-                    window.removeEventListener('mouseup', onMouseUp);
-                }
-            };
-
-            window.addEventListener('mousedown', onMouseDown);
-            window.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('mouseup', onMouseUp);
-        });
-
-        // Level 2: Peirce (The Triangle of Light)
-        game.addLevel('peirce', (group) => {
-            const container = new THREE.Group();
-            group.add(container);
-
-            // 1. Rock (Object) - Node A
-            const rockGeo = new THREE.IcosahedronGeometry(1, 0);
-            const rockMat = new THREE.MeshPhongMaterial({ color: 0x888888, flatShading: true });
-            const rock = new THREE.Mesh(rockGeo, rockMat);
-            rock.position.set(-6, 1.5, -4);
-            rock.castShadow = true;
-            container.add(rock);
-
-            // 2. Photo (Representamen) - Node B
-            const photoGeo = new THREE.PlaneGeometry(2, 2);
-            const photoMat = new THREE.MeshPhongMaterial({ color: 0xcccccc, side: THREE.DoubleSide });
-            const photo = new THREE.Mesh(photoGeo, photoMat);
-            photo.position.set(6, 1.5, -4);
-            photo.rotation.y = -Math.PI / 4;
-            photo.receiveShadow = true;
-            container.add(photo);
-
-            // 3. Interpretant (Prisma) - Controlled by user
-            const prismaGeo = new THREE.ConeGeometry(0.8, 1.5, 4);
-            const prismaMat = new THREE.MeshPhongMaterial({
-                color: 0x00ffff,
-                transparent: true,
-                opacity: 0.6,
-                emissive: 0x00ffff,
-                emissiveIntensity: 0.2
-            });
-            const prisma = new THREE.Mesh(prismaGeo, prismaMat);
-            prisma.position.set(0, 1.5, 4);
-            prisma.castShadow = true;
-            container.add(prisma);
-
-            // Lasers
-            const laserMat = new THREE.LineBasicMaterial({ color: 0xff0000 });
-
-            // Beam 1: Object -> Interpretant (starts faulty)
-            const beam1Points = [rock.position.clone(), prisma.position.clone()];
-            const beam1Geo = new THREE.BufferGeometry().setFromPoints(beam1Points);
-            const beam1 = new THREE.Line(beam1Geo, laserMat);
-            container.add(beam1);
-
-            // Beam 2: Interpretant -> Representamen (initially empty)
-            const beam2Geo = new THREE.BufferGeometry().setFromPoints([prisma.position.clone(), prisma.position.clone()]);
-            const beam2 = new THREE.Line(beam2Geo, laserMat);
-            container.add(beam2);
-
-            let won = false;
-
-            const onKeyDown = (event) => {
-                if (won) return;
-                const speed = 0.5;
-                switch (event.key) {
-                    case 'ArrowUp': prisma.position.z -= speed; break;
-                    case 'ArrowDown': prisma.position.z += speed; break;
-                    case 'ArrowLeft': prisma.position.x -= speed; break;
-                    case 'ArrowRight': prisma.position.x += speed; break;
-                }
-                updateLasers();
-            };
-
-            const updateLasers = () => {
-                // Update beam 1 target
-                const positions1 = beam1.geometry.attributes.position.array;
-                positions1[3] = prisma.position.x;
-                positions1[4] = prisma.position.y;
-                positions1[5] = prisma.position.z;
-                beam1.geometry.attributes.position.needsUpdate = true;
-
-                // Check distance to "sweet spot" (Triangle center-ish)
-                const targetX = 0;
-                const targetZ = -4;
-                const dist = Math.sqrt(Math.pow(prisma.position.x - targetX, 2) + Math.pow(prisma.position.z - targetZ, 2));
-
-                if (dist < 1) {
-                    // Success: Connect to Representamen
-                    const positions2 = beam2.geometry.attributes.position.array;
-                    positions2[0] = prisma.position.x;
-                    positions2[1] = prisma.position.y;
-                    positions2[2] = prisma.position.z;
-                    positions2[3] = photo.position.x;
-                    positions2[4] = photo.position.y;
-                    positions2[5] = photo.position.z;
-                    beam2.geometry.attributes.position.needsUpdate = true;
-
-                    laserMat.color.set(0x00ff00);
-
-                    if (!won) {
-                        won = true;
-                        game.showWin('Semiosis Ilimitada Activada');
-                        window.removeEventListener('keydown', onKeyDown);
-                    }
-                } else {
-                    // Reset beam 2
-                    const positions2 = beam2.geometry.attributes.position.array;
-                    positions2[0] = prisma.position.x;
-                    positions2[1] = prisma.position.y;
-                    positions2[2] = prisma.position.z;
-                    positions2[3] = prisma.position.x;
-                    positions2[4] = prisma.position.y;
-                    positions2[5] = prisma.position.z;
-                    beam2.geometry.attributes.position.needsUpdate = true;
-                    laserMat.color.set(0xff0000);
-                }
-            };
-
-            window.addEventListener('keydown', onKeyDown);
-            updateLasers(); // Initial call
-        });
-
-        // Level 3: Barthes (Myths and Layers)
-        game.addLevel('barthes', (group) => {
-            const container = new THREE.Group();
-            group.add(container);
-
-            // Soldier figurine (Low-poly)
-            const soldierGroup = new THREE.Group();
-
-            // Base/Legs
-            const legsGeo = new THREE.BoxGeometry(0.8, 1, 0.5);
-            const uniformMat = new THREE.MeshPhongMaterial({ color: 0x4B5320 }); // Olive Drab
-            const legs = new THREE.Mesh(legsGeo, uniformMat);
-            legs.position.y = 0.5;
-            legs.castShadow = true;
-            soldierGroup.add(legs);
-
-            // Torso
-            const torsoGeo = new THREE.BoxGeometry(1, 1.2, 0.6);
-            const torso = new THREE.Mesh(torsoGeo, uniformMat);
-            torso.position.y = 1.6;
-            torso.castShadow = true;
-            soldierGroup.add(torso);
-
-            // Head (Helmet)
-            const headGeo = new THREE.SphereGeometry(0.4, 8, 8);
-            const head = new THREE.Mesh(headGeo, uniformMat);
-            head.position.y = 2.4;
-            head.castShadow = true;
-            soldierGroup.add(head);
-
-            // Rifle
-            const rifleGeo = new THREE.BoxGeometry(0.2, 0.2, 1.5);
-            const rifleMat = new THREE.MeshPhongMaterial({ color: 0x333333 });
-            const rifle = new THREE.Mesh(rifleGeo, rifleMat);
-            rifle.position.set(0.6, 1.8, 0.5);
-            rifle.castShadow = true;
-            soldierGroup.add(rifle);
-
-            soldierGroup.position.y = 0;
-            container.add(soldierGroup);
-
-            // Slider Logic
-            const sliderContainer = document.getElementById('slider-container');
-            const slider = document.getElementById('myth-slider');
-            const label = document.getElementById('myth-label');
-
-            sliderContainer.style.display = 'block';
-            slider.value = 0;
-            label.innerText = 'SOLDADO';
-            label.style.color = '#333';
-
-            const goldMat = new THREE.MeshPhongMaterial({
-                color: 0xffd700,
-                emissive: 0xffaa00,
-                emissiveIntensity: 0,
-                shininess: 100
-            });
-
-            const onSliderInput = () => {
-                const val = slider.value / 100;
-
-                // Interpolate colors and effects
-                uniformMat.emissiveIntensity = val * 0.5;
-                uniformMat.color.lerpColors(new THREE.Color(0x4B5320), new THREE.Color(0xffd700), val);
-
-                if (val > 0.8) {
-                    label.innerText = 'HÉROE / NACIONALISMO';
-                    label.style.color = '#d4af37';
-                } else {
-                    label.innerText = 'SOLDADO';
-                    label.style.color = '#333';
-                }
-
-                if (val >= 0.99) {
-                    game.showWin('Mito Consolidado: El lenguaje robado');
-                }
-            };
-
-            slider.addEventListener('input', onSliderInput);
-
-            // Cleanup function for when level changes
-            const originalLoad = game.loadLevel;
-            game.loadLevel = (name) => {
-                slider.removeEventListener('input', onSliderInput);
-                game.loadLevel = originalLoad;
-                game.loadLevel(name);
-            };
-        });
-
-        // Level 4: Baudrillard (Simulacra and Simulation)
-        game.addLevel('baudrillard', (group) => {
-            const container = new THREE.Group();
-            group.add(container);
-
-            // 1. Terrain
-            // Create a procedural "satellite map" texture
-            const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 512;
-            const ctx = canvas.getContext('2d');
-            for (let i = 0; i < 100; i++) {
-                ctx.fillStyle = `rgb(${100 + Math.random() * 50}, ${120 + Math.random() * 50}, ${80 + Math.random() * 50})`;
-                ctx.fillRect(Math.random() * 512, Math.random() * 512, 50, 50);
-            }
-            const mapTex = new THREE.CanvasTexture(canvas);
-            mapTex.magFilter = THREE.NearestFilter; // Sharp pixels
-
-            const terrainGeo = new THREE.PlaneGeometry(100, 100, 50, 50);
-            const terrainMat = new THREE.MeshPhongMaterial({ map: mapTex });
-            const terrain = new THREE.Mesh(terrainGeo, terrainMat);
-            terrain.rotation.x = -Math.PI / 2;
-            terrain.receiveShadow = true;
-            container.add(terrain);
-
-            // 2. The Simulacrum (Building in the distance)
-            const buildingGeo = new THREE.BoxGeometry(4, 10, 4);
-            const buildingMat = new THREE.MeshPhongMaterial({ color: 0x999999, wireframe: false });
-            const building = new THREE.Mesh(buildingGeo, buildingMat);
-            building.position.set(0, 5, -30);
-            building.castShadow = true;
-            container.add(building);
-
-            // Monitor distance in the animation loop (local update)
-            const update = () => {
-                if (game.currentLevelObject !== group) return;
-
-                const dist = game.camera.position.distanceTo(building.position);
-
-                // Degradation logic
-                if (dist < 15) {
-                    buildingMat.wireframe = true;
-                    mapTex.magFilter = THREE.NearestFilter;
-                    mapTex.needsUpdate = true;
-
-                    if (dist < 10) {
-                        building.visible = (Math.random() > 0.1); // Glitch effect
-                    }
-                } else {
-                    buildingMat.wireframe = false;
-                    building.visible = true;
-                }
-
-                if (dist < 8) {
-                    game.showWin('Bienvenido al desierto de lo real. El simulacro es verdad.');
-                }
-
-                requestAnimationFrame(update);
-            };
-
-            update();
-        });
-
-        // Add to global scope
-        window.gameInstance = game;
-
-        // Start with Saussure
-        game.loadLevel('saussure');
-
+        window.gameInstance = new Game();
     </script>
 </body>
 
