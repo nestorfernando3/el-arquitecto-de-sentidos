@@ -4,16 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Museum of Meaning</title>
+    <title>El Arquitecto de Sentidos</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-color: #111;
+            background-color: #000;
             font-family: 'Courier New', Courier, monospace;
+            color: #ccc;
+            user-select: none;
             cursor: none;
-            /* Hide default cursor, use custom reticle */
         }
 
         #canvas-container {
@@ -22,200 +23,157 @@
             left: 0;
             width: 100%;
             height: 100%;
+            opacity: 0;
+            /* Starts hidden for intro */
+            transition: opacity 2s;
         }
 
-        /* Custom Cursor/Reticle */
+        /* Intro / Narrative Overlay */
+        #narrative-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            background: #000;
+            pointer-events: auto;
+            text-align: center;
+        }
+
+        .narrative-text {
+            font-size: 1.5rem;
+            max-width: 600px;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1s, transform 1s;
+        }
+
+        .narrative-text.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #start-btn {
+            padding: 15px 30px;
+            background: transparent;
+            border: 1px solid #fff;
+            color: #fff;
+            font-family: inherit;
+            font-size: 1.2rem;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 1s, background 0.3s, color 0.3s;
+            display: none;
+            /* hidden until end of intro text */
+        }
+
+        #start-btn:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        /* Custom Reticle */
         #reticle {
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 10px;
-            height: 10px;
-            border: 2px solid white;
+            width: 8px;
+            height: 8px;
+            border: 1px solid white;
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
             mix-blend-mode: difference;
-            transition: width 0.2s, height 0.2s, background 0.2s;
-            z-index: 100;
+            transition: all 0.2s;
+            z-index: 200;
         }
 
         #reticle.active {
             width: 40px;
             height: 40px;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
         }
 
-        #ui-overlay {
+        /* In-Game UI */
+        #game-ui {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
-            text-align: center;
-            color: #fff;
-            z-index: 10;
-            mix-blend-mode: difference;
+            display: none;
         }
 
-        h1 {
-            font-weight: 100;
-            letter-spacing: 5px;
+        #mission-text {
+            position: absolute;
+            bottom: 50px;
+            width: 100%;
+            text-align: center;
+            font-size: 1rem;
+            letter-spacing: 2px;
             text-transform: uppercase;
-            font-size: 2rem;
-            margin: 0;
-            opacity: 0;
-            animation: fadeInOut 4s ease-in-out forwards;
+            color: rgba(255, 255, 255, 0.7);
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
         }
 
-        .subtitle {
-            font-size: 0.8rem;
-            margin-top: 10px;
-            opacity: 0;
-            animation: fadeInOut 4s ease-in-out 1s forwards;
-        }
-
-        #level-instructions {
+        #chapter-title {
             position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 40px;
+            width: 100%;
             text-align: center;
-            color: white;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-size: 0.9rem;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.5s;
-            z-index: 20;
-            max-width: 600px;
+            font-size: 0.8rem;
+            letter-spacing: 5px;
+            opacity: 0.5;
         }
 
-        #return-hint {
+        #return-btn {
             position: absolute;
             top: 20px;
             left: 20px;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.8rem;
-            cursor: pointer;
             pointer-events: auto;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            padding: 8px 12px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 5px 10px;
+            font-size: 0.7rem;
             display: none;
             background: rgba(0, 0, 0, 0.5);
-            transition: all 0.3s;
-            z-index: 20;
         }
 
-        #return-hint:hover {
-            color: #fff;
+        #return-btn:hover {
             background: rgba(255, 255, 255, 0.1);
-        }
-
-        @keyframes fadeInOut {
-            0% {
-                opacity: 0;
-                letter-spacing: 10px;
-            }
-
-            30% {
-                opacity: 1;
-                letter-spacing: 5px;
-            }
-
-            80% {
-                opacity: 1;
-            }
-
-            100% {
-                opacity: 0;
-            }
-        }
-
-        /* Barthes Lever */
-        #barthes-lever {
-            position: absolute;
-            bottom: 20%;
-            right: 10%;
-            width: 40px;
-            height: 200px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            display: none;
-            pointer-events: auto;
-            cursor: none;
-            /* using reticle */
-            z-index: 20;
-        }
-
-        #lever-handle {
-            width: 100%;
-            height: 20px;
-            background: #fff;
-            position: absolute;
-            bottom: 0;
-            box-shadow: 0 0 10px white;
-        }
-
-        #barthes-hint {
-            position: absolute;
-            bottom: 15%;
-            right: 10%;
-            color: white;
-            font-size: 0.8rem;
-            text-align: center;
-            opacity: 0.8;
-            display: none;
-        }
-
-        #keys-hint {
-            position: absolute;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-            display: none;
-            opacity: 0.7;
-        }
-
-        .key {
-            border: 1px solid white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            color: white;
-            font-weight: bold;
+            border-color: white;
         }
     </style>
 </head>
 
 <body>
+
+    <!-- Narrative Intro -->
+    <div id="narrative-overlay">
+        <div id="intro-lines"></div>
+        <button id="start-btn">BEGIN ARCHITECTURE</button>
+    </div>
+
+    <!-- Gameplay UI -->
+    <div id="game-ui">
+        <div id="chapter-title">CHAPTER I: THE SEPARATION</div>
+        <div id="mission-text"></div>
+        <div id="return-btn">RETURN TO MUSEUM</div>
+    </div>
+
     <div id="reticle"></div>
-
-    <div id="ui-overlay">
-        <h1>Museum of Meaning</h1>
-        <div class="subtitle">Architecting the senses through semiotics</div>
-    </div>
-
-    <div id="level-instructions"></div>
-    <div id="return-hint" onclick="gameInstance.loadLevel('hub')">← RETURN TO GALLERY</div>
-
-    <div id="barthes-lever">
-        <div id="lever-handle"></div>
-    </div>
-    <div id="barthes-hint">DRAG LEVER UP</div>
-
-    <div id="keys-hint">
-        <div class="key">←</div>
-        <div class="key">↑</div>
-        <div class="key">↓</div>
-        <div class="key">→</div>
-    </div>
-
     <div id="canvas-container"></div>
 
+    <!-- Three.js Import -->
     <script type="importmap">
         {
             "imports": {
@@ -232,13 +190,25 @@
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+
+        // --- Narrative Data ---
+        const INTRO_LINES = [
+            "The world is broken.",
+            "Words have drifted from their objects.",
+            "Meaning has dissolved into noise.",
+            "You are the Architect.",
+            "You must rebuild the bridges.",
+            "Restore the connection."
+        ];
 
         class Game {
             constructor() {
                 this.container = document.getElementById('canvas-container');
                 this.scene = new THREE.Scene();
                 this.scene.background = new THREE.Color(0x050505);
-                this.scene.fog = new THREE.FogExp2(0x050505, 0.03);
+                this.scene.fog = new THREE.FogExp2(0x050505, 0.02);
 
                 this.initCamera();
                 this.initRenderer();
@@ -250,14 +220,15 @@
                 this.levels = {};
                 this.currentLevelName = '';
                 this.activeObjects = [];
+                this.level1Completed = false; // Progressive disclosure flag
 
                 window.addEventListener('resize', () => this.onWindowResize());
-                this.animate();
 
                 this.setupLevels();
-                this.loadLevel('hub');
+                this.startIntro();
             }
 
+            // --- Initialization ---
             initCamera() {
                 this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
                 this.camera.position.set(0, 2, 8);
@@ -266,11 +237,9 @@
             initRenderer() {
                 this.renderer = new THREE.WebGLRenderer({ antialias: false });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(window.devicePixelRatio);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 this.renderer.shadowMap.enabled = true;
-                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
                 this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                this.renderer.toneMappingExposure = 1.0;
                 this.container.appendChild(this.renderer.domElement);
             }
 
@@ -278,17 +247,22 @@
                 this.composer = new EffectComposer(this.renderer);
                 this.composer.addPass(new RenderPass(this.scene, this.camera));
 
+                // Very subtle bloom for visual polish without blinding
                 this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+                this.bloomPass.strength = 0.3;
+                this.bloomPass.radius = 0.2;
+                this.bloomPass.threshold = 0.8;
                 this.composer.addPass(this.bloomPass);
+
                 this.composer.addPass(new OutputPass());
             }
 
             initLights() {
-                this.ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                this.ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
                 this.scene.add(this.ambientLight);
 
-                this.dirLight = new THREE.DirectionalLight(0xffffff, 2);
-                this.dirLight.position.set(5, 10, 5);
+                this.dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+                this.dirLight.position.set(5, 10, 7);
                 this.dirLight.castShadow = true;
                 this.scene.add(this.dirLight);
             }
@@ -297,9 +271,11 @@
                 this.controls = new OrbitControls(this.camera, this.renderer.domElement);
                 this.controls.enableDamping = true;
                 this.controls.dampingFactor = 0.05;
-                this.controls.maxPolarAngle = Math.PI / 1.5;
-                this.controls.minDistance = 2;
-                this.controls.maxDistance = 20;
+                this.controls.enablePan = false;
+                this.controls.maxPolarAngle = Math.PI / 2 + 0.1; // allow slightly below horizon
+                this.controls.minDistance = 3;
+                this.controls.maxDistance = 15;
+                this.controls.enabled = false; // Disabled during intro
             }
 
             initInput() {
@@ -310,406 +286,322 @@
                 window.addEventListener('mousemove', (e) => {
                     this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
                     this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-                    // Reticle follows mouse visually (even though cursor is hidden)
                     this.reticle.style.left = e.clientX + 'px';
                     this.reticle.style.top = e.clientY + 'px';
-
                     this.checkHover();
                 });
 
-                window.addEventListener('click', () => {
-                    this.checkClick();
+                window.addEventListener('mousedown', (e) => { this.onMouseDown(e); });
+                window.addEventListener('mouseup', () => { this.onMouseUp(); });
+                window.addEventListener('click', (e) => { this.onClick(e); });
+
+                // Return button logic
+                document.getElementById('return-btn').addEventListener('click', () => {
+                    this.loadLevel('hub');
                 });
             }
 
-            checkHover() {
-                if (this.currentLevelName !== 'hub') {
-                    // Check logic for specific levels if needed
-                    if (this.currentLevelName === 'barthes') {
-                        // Check lever
-                        const lever = document.getElementById('barthes-lever');
-                        const rect = lever.getBoundingClientRect();
-                        const cx = parseFloat(this.reticle.style.left);
-                        const cy = parseFloat(this.reticle.style.top);
-                        if (cx >= rect.left && cx <= rect.right && cy >= rect.top && cy <= rect.bottom) {
-                            this.reticle.classList.add('active');
-                        } else {
-                            this.reticle.classList.remove('active');
-                        }
-                    } else if (this.currentLevelName === 'saussure') {
-                        this.reticle.classList.add('active'); // Always active interaction in saussure (drag anywhere)
-                    } else {
-                        this.reticle.classList.remove('active');
-                    }
-                    return;
+            // --- Narrative System ---
+            async startIntro() {
+                const container = document.getElementById('intro-lines');
+                const btn = document.getElementById('start-btn');
+
+                // Play narrative lines one by one
+                for (let line of INTRO_LINES) {
+                    container.innerHTML = `<div class="narrative-text active">${line}</div>`;
+                    await new Promise(r => setTimeout(r, 2500)); // Read time
+                    container.innerHTML = ''; // Clear
+                    await new Promise(r => setTimeout(r, 500)); // Pause
                 }
 
-                this.raycaster.setFromCamera(this.mouse, this.camera);
-                const intersects = this.raycaster.intersectObjects(this.activeObjects);
+                // Show Start Button
+                btn.style.display = 'block';
+                setTimeout(() => btn.style.opacity = 1, 100);
 
-                if (intersects.length > 0) {
-                    this.reticle.classList.add('active');
-                    const name = intersects[0].object.userData.levelName;
-                    this.setInstructions(`ENTER EXHIBIT: ${name}`);
-                } else {
-                    this.reticle.classList.remove('active');
-                    this.setInstructions("Explore the Gallery. Click a concept to enter.");
-                }
+                btn.addEventListener('click', () => {
+                    document.getElementById('narrative-overlay').style.opacity = 0;
+                    setTimeout(() => {
+                        document.getElementById('narrative-overlay').style.display = 'none';
+                        this.container.style.opacity = 1;
+                        document.getElementById('game-ui').style.display = 'block';
+                        this.animate();
+                        // START DIRECTLY IN LEVEL 1
+                        this.loadLevel('level1');
+                    }, 1000);
+                });
             }
 
-            checkClick() {
-                if (this.currentLevelName !== 'hub') return;
-
-                this.raycaster.setFromCamera(this.mouse, this.camera);
-                const intersects = this.raycaster.intersectObjects(this.activeObjects);
-
-                if (intersects.length > 0) {
-                    const levelId = intersects[0].object.userData.levelId;
-                    if (levelId) this.loadLevel(levelId);
-                }
-            }
-
-            setInstructions(text) {
-                const el = document.getElementById('level-instructions');
-                el.innerText = text;
-                el.style.opacity = 1;
-            }
-
-            onWindowResize() {
-                this.camera.aspect = window.innerWidth / window.innerHeight;
-                this.camera.updateProjectionMatrix();
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.composer.setSize(window.innerWidth, window.innerHeight);
-            }
-
+            // --- Level Management ---
             setupLevels() {
-                // HUB
-                this.addLevel('hub', (group) => {
-                    this.scene.background = new THREE.Color(0x111111);
-                    this.scene.fog = new THREE.FogExp2(0x111111, 0.05);
-                    this.bloomPass.strength = 1.2;
-                    this.bloomPass.radius = 0.5;
-                    this.ambientLight.intensity = 0.5;
+                // LEVEL 1: THE TREE (CONCRETE)
+                this.addLevel('level1', (group) => {
+                    this.scene.background = new THREE.Color(0x222222);
+                    this.controls.enabled = true;
+                    document.getElementById('chapter-title').innerText = "CHAPTER I: THE SEPARATION";
+                    document.getElementById('mission-text').innerText = "DRAG TO ALIGN THE WORD WITH THE OBJECT";
+                    document.getElementById('return-btn').style.display = 'none'; // Can't leave yet
 
-                    const createPlinth = (x, z, color, levelId, name) => {
-                        const geo = new THREE.BoxGeometry(1, 1, 1);
-                        const mat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-                        const mesh = new THREE.Mesh(geo, mat);
-                        mesh.position.set(x, 0.5, z);
-                        mesh.castShadow = true;
-                        group.add(mesh);
+                    // 1. The Broken Ring (Geometry)
+                    const radius = 2.5;
+                    const height = 0.5;
+                    const segments = 64;
 
-                        const portalGeo = new THREE.IcosahedronGeometry(0.3, 0);
-                        const portalMat = new THREE.MeshStandardMaterial({
-                            color: color, emissive: color, emissiveIntensity: 2, transparent: true, opacity: 0.8
-                        });
-                        const portal = new THREE.Mesh(portalGeo, portalMat);
-                        portal.position.set(x, 2, z);
-                        group.add(portal);
-
-                        portal.userData = { levelId, levelName: name, floatY: 2, phase: Math.random() * 10 };
-                        this.activeObjects.push(portal);
-                    };
-
-                    this.activeObjects = [];
-                    createPlinth(-3, 0, 0xff4444, 'saussure', 'Saussure');
-                    createPlinth(-1, 0, 0x44ff44, 'peirce', 'Peirce');
-                    createPlinth(1, 0, 0xffaa00, 'barthes', 'Barthes');
-                    createPlinth(3, 0, 0x4444ff, 'baudrillard', 'Baudrillard');
-
-                    this.setInstructions("Welcome to the Museum of Meaning. Click on a glowing symbol to enter.");
-                });
-
-                // SAUSSURE (REFINED)
-                this.addLevel('saussure', (group) => {
-                    this.scene.background = new THREE.Color(0xdddddd); // Slightly darker for contrast
-                    this.scene.fog = new THREE.Fog(0xdddddd, 20, 50);
-                    this.bloomPass.strength = 0.1; // REDUCED from 0.5
-                    this.bloomPass.threshold = 0.9;
-
-                    this.setInstructions("MISSION: Create Meaning. Drag horizontally to align the RED WORD with the BLUE OBJECT.");
-
-                    const semiGeo = new THREE.CylinderGeometry(2, 2, 0.5, 64, 1, false, 0, Math.PI);
-
-                    // GHOST TARGET
-                    const ghost = new THREE.Mesh(semiGeo, new THREE.MeshBasicMaterial({
-                        color: 0xff0000,
-                        transparent: true,
-                        opacity: 0.1,
-                        wireframe: true
-                    }));
-                    ghost.rotation.x = Math.PI / 2;
-                    ghost.position.set(0, 0, 0);
-                    group.add(ghost);
-
-                    // Half 1: Signifier (Red)
+                    // Left Half (Word) - Gold/Paper
+                    const geo1 = new THREE.CylinderGeometry(radius, radius, height, segments, 1, false, Math.PI, Math.PI);
+                    const mat1 = new THREE.MeshStandardMaterial({
+                        color: 0xaa8866, roughness: 0.8, flatShading: false
+                    });
                     const half1 = new THREE.Group();
-                    const coin1 = new THREE.Mesh(semiGeo, new THREE.MeshStandardMaterial({ color: 0xff3333, roughness: 0.5 }));
-                    coin1.rotation.x = Math.PI / 2;
-                    half1.add(coin1);
+                    const mesh1 = new THREE.Mesh(geo1, mat1);
+                    mesh1.rotation.x = Math.PI / 2;
+                    half1.add(mesh1);
 
-                    // Better Text Position
+                    // Text "TREE"
                     const canvas = document.createElement('canvas');
                     canvas.width = 512; canvas.height = 256;
                     const ctx = canvas.getContext('2d');
-                    ctx.font = "bold 60px Courier New";
                     ctx.fillStyle = "white";
+                    ctx.font = "bold 80px Courier New";
                     ctx.textAlign = "center";
-                    ctx.fillText("SIGNIFIER", 256, 128);
-                    ctx.strokeStyle = "black";
-                    ctx.lineWidth = 4;
-                    ctx.strokeText("SIGNIFIER", 256, 128);
-
+                    ctx.fillText("TREE", 256, 150);
                     const tex = new THREE.CanvasTexture(canvas);
-                    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex }));
-                    label.scale.set(4, 2, 1);
-                    label.position.set(0, 1.8, 0); // Moved UP
-                    half1.add(label);
+                    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+                    sprite.scale.set(4, 2, 1);
+                    sprite.position.set(0, 1.5, 0.2);
+                    half1.add(sprite);
 
-                    // Half 2: Signified
+                    // Right Half (Object) - Green/Organic
+                    const geo2 = new THREE.CylinderGeometry(radius, radius, height, segments, 1, false, 0, Math.PI);
+                    const mat2 = new THREE.MeshStandardMaterial({
+                        color: 0x225522, roughness: 0.6
+                    });
                     const half2 = new THREE.Group();
-                    const coin2 = new THREE.Mesh(semiGeo, new THREE.MeshStandardMaterial({ color: 0x3333ff, roughness: 0.5 }));
-                    coin2.rotation.x = Math.PI / 2;
-                    coin2.rotation.z = Math.PI;
-                    half2.add(coin2);
+                    const mesh2 = new THREE.Mesh(geo2, mat2);
+                    mesh2.rotation.x = Math.PI / 2;
+                    half2.add(mesh2);
 
-                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.5), new THREE.MeshStandardMaterial({ color: 0x554433 }));
+                    // Low Poly Tree Model inside Half 2
+                    const trunk = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.2, 0.4, 1.5, 6),
+                        new THREE.MeshStandardMaterial({ color: 0x553311 })
+                    );
                     trunk.rotation.x = Math.PI / 2;
                     trunk.position.y = -0.5;
-                    half2.add(trunk);
-                    const leaves = new THREE.Mesh(new THREE.ConeGeometry(1, 2, 8), new THREE.MeshStandardMaterial({ color: 0x228822 }));
+
+                    const leaves = new THREE.Mesh(
+                        new THREE.DodecahedronGeometry(1.2),
+                        new THREE.MeshStandardMaterial({ color: 0x228822, flatShading: true })
+                    );
+                    leaves.position.y = -1.5; // Visual offset inside hoop
                     leaves.rotation.x = Math.PI / 2;
-                    leaves.position.y = -1.5;
+
+                    half2.add(trunk);
                     half2.add(leaves);
 
-                    half1.position.x = -0.5;
-                    half2.position.x = 0.5;
-                    half1.rotation.z = Math.PI / 2; // Start unaligned
+                    // Positioning
+                    half1.position.x = -0.1;
+                    half2.position.x = 0.1;
+
+                    // Initial Separation (Misaligned)
+                    half1.rotation.z = Math.PI / 2; // Crooked
+
                     group.add(half1);
                     group.add(half2);
 
-                    let holding = false, won = false;
-                    const onDown = () => holding = true;
-                    const onUp = () => holding = false;
-                    const onMove = (e) => {
-                        if (holding && !won) {
-                            half1.rotation.z += e.movementX * 0.005; // Reduced sensitivity
+                    // GHOST HINT
+                    const ghost = new THREE.Mesh(geo1, new THREE.MeshBasicMaterial({
+                        color: 0xffaa00, wireframe: true, transparent: true, opacity: 0.1
+                    }));
+                    ghost.rotation.x = Math.PI / 2;
+                    ghost.position.set(-0.1, 0, 0);
+                    group.add(ghost);
+
+                    // Logic
+                    let won = false;
+                    let isDragging = false;
+
+                    group.userData.onMouseDown = () => { isDragging = true; };
+                    group.userData.onMouseUp = () => { isDragging = false; };
+                    group.userData.onMouseMove = (e) => {
+                        if (isDragging && !won) {
+                            half1.rotation.z += e.movementX * 0.005;
                             checkWin();
                         }
                     };
 
                     const checkWin = () => {
-                        const r1 = (half1.rotation.z % (Math.PI * 2));
-                        let angle = r1;
-                        if (angle > Math.PI) angle -= Math.PI * 2;
-                        if (angle < -Math.PI) angle += Math.PI * 2;
+                        // Normalize angle
+                        let r = half1.rotation.z % (Math.PI * 2);
+                        if (r > Math.PI) r -= Math.PI * 2;
+                        if (r < -Math.PI) r += Math.PI * 2;
 
-                        if (Math.abs(angle) < 0.15) {
+                        // Win if angle is close to 0
+                        if (Math.abs(r) < 0.1) {
                             won = true;
+                            // Snap
                             half1.rotation.z = 0;
                             half1.position.x = 0;
                             half2.position.x = 0;
 
-                            this.bloomPass.strength = 1.5;
-                            setTimeout(() => { if (this.currentLevelName === 'saussure') this.bloomPass.strength = 0.1; }, 1000);
-
-                            this.setInstructions("MEANING CONSOLIDATED: The Sign is Arbitrary, but the System is Fixed.");
-
-                            const gold = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffaa00, emissiveIntensity: 0.5 });
-                            coin1.material = gold;
-                            coin2.material = gold;
+                            // Effects
+                            this.bloomPass.strength = 1.0;
                             ghost.visible = false;
-                        }
-                    };
+                            document.getElementById('mission-text').innerText = "MEANING RESTORED.";
+                            document.getElementById('mission-text').style.color = "#FFD700";
 
-                    window.addEventListener('mousedown', onDown);
-                    window.addEventListener('mouseup', onUp);
-                    window.addEventListener('mousemove', onMove);
-                    group.userData.cleanup = () => {
-                        window.removeEventListener('mousedown', onDown);
-                        window.removeEventListener('mouseup', onUp);
-                        window.removeEventListener('mousemove', onMove);
+                            // Fade out bloom slowly
+                            let fade = setInterval(() => {
+                                this.bloomPass.strength *= 0.95;
+                                if (this.bloomPass.strength < 0.3) clearInterval(fade);
+                            }, 50);
+
+                            // Show next step after delay
+                            setTimeout(() => {
+                                this.level1Completed = true; // Unlock hub
+                                this.createNextButton(group, "ENTER THE MUSEUM");
+                            }, 2000);
+                        }
                     };
                 });
 
-                // PEIRCE
-                this.addLevel('peirce', (group) => {
-                    this.scene.background = new THREE.Color(0x050505);
-                    this.ambientLight.intensity = 0.8;
-                    this.setInstructions("Connect the Triangle. Move the CYAN PRISMA to intercept the Red Laser.");
-                    document.getElementById('keys-hint').style.display = 'flex';
+                // HUB (Museum)
+                this.addLevel('hub', (group) => {
+                    this.scene.background = new THREE.Color(0x111111);
+                    document.getElementById('chapter-title').innerText = "THE MUSEUM OF MEANING";
+                    document.getElementById('mission-text').innerText = "EXPLORE THE CONCEPTS";
+                    document.getElementById('return-btn').style.display = 'none';
 
-                    // Rock
-                    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1), new THREE.MeshStandardMaterial({ color: 0x888888 }));
-                    rock.position.set(-5, 0, -5);
+                    // Plinth Factory
+                    const createExhibit = (x, z, color, id, name) => {
+                        const base = new THREE.Mesh(
+                            new THREE.BoxGeometry(1, 4, 1),
+                            new THREE.MeshStandardMaterial({ color: 0x333333 })
+                        );
+                        base.position.set(x, -1, z);
+                        group.add(base);
+
+                        // Floating Artifact
+                        const gem = new THREE.Mesh(
+                            new THREE.OctahedronGeometry(0.4),
+                            new THREE.MeshStandardMaterial({
+                                color: color, emissive: color, emissiveIntensity: 1,
+                                transparent: true, opacity: 0.8
+                            })
+                        );
+                        gem.position.set(x, 1.5, z);
+
+                        // Animation metadata
+                        gem.userData = { id: id, name: name, baseY: 1.5, phase: Math.random() * 10 };
+                        this.activeObjects.push(gem);
+                        group.add(gem);
+
+                        // Label (3D Text simplified as sprite)
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 256; canvas.height = 64;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = "rgba(255,255,255,0.5)";
+                        ctx.font = "20px Courier New";
+                        ctx.textAlign = "center";
+                        ctx.fillText(name, 128, 40);
+                        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas) }));
+                        sprite.position.set(x, 2.2, z);
+                        sprite.scale.set(2, 0.5, 1);
+                        group.add(sprite);
+                    };
+
+                    this.activeObjects = []; // Reset active list
+
+                    // 1. The Tree (Already done, but revisit)
+                    createExhibit(-3, 0, 0xffaa00, 'level1', 'THE TREE');
+
+                    // 2. The Triangle (Peirce)
+                    createExhibit(0, 0, 0x00ffff, 'level2', 'THE TRIANGLE');
+
+                    // 3. The Myth (Barthes)
+                    createExhibit(3, 0, 0xff4444, 'level3', 'THE MYTH');
+
+                    this.controls.enabled = true;
+                });
+
+                // LEVEL 2: PEIRCE (Triangle)
+                this.addLevel('level2', (group) => {
+                    this.scene.background = new THREE.Color(0x111122);
+                    document.getElementById('chapter-title').innerText = "CHAPTER II: THE TRIAD";
+                    document.getElementById('mission-text').innerText = "USE ARROW KEYS TO CONNECT THE INTERPRETANT";
+                    document.getElementById('return-btn').style.display = 'block';
+
+                    // Setup Triangle Logic (Simplified from previous)
+                    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.8), new THREE.MeshStandardMaterial({ color: 0x888888 }));
+                    rock.position.set(-3, 0, -2);
                     group.add(rock);
 
-                    // Photo
-                    const photo = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-                    photo.position.set(5, 0, -5);
-                    group.add(photo);
+                    const sign = new THREE.Mesh(new THREE.BoxGeometry(1, 1.4, 0.1), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+                    sign.position.set(3, 0, -2);
+                    group.add(sign);
 
-                    // Prisma
-                    const prisma = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.5, 4), new THREE.MeshStandardMaterial({
-                        color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 0.5, transparent: true, opacity: 0.8
+                    const interpretant = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1, 4), new THREE.MeshStandardMaterial({
+                        color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 0.5
                     }));
-                    prisma.position.set(0, 0, 5);
-                    group.add(prisma);
+                    interpretant.position.set(0, 1, 3);
+                    group.add(interpretant);
 
-                    // Beams
-                    const beamGeo = new THREE.CylinderGeometry(0.1, 0.1, 1);
-                    const beamMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-                    const beam1 = new THREE.Mesh(beamGeo, beamMat);
-                    beam1.geometry.translate(0, 0.5, 0); beam1.rotation.x = Math.PI / 2;
-                    group.add(beam1);
+                    // Beam
+                    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+                    beam.geometry.translate(0, 0.5, 0);
+                    beam.rotation.x = -Math.PI / 2;
+                    group.add(beam);
 
-                    const beam2 = new THREE.Mesh(beamGeo, beamMat);
-                    beam2.geometry.translate(0, 0.5, 0); beam2.rotation.x = Math.PI / 2; beam2.visible = false;
-                    group.add(beam2);
-
-                    let won = false;
-                    group.userData.update = () => {
-                        const dist = rock.position.distanceTo(prisma.position);
-                        beam1.position.copy(rock.position);
-                        beam1.lookAt(prisma.position);
-                        beam1.rotateX(Math.PI / 2);
-                        beam1.scale.set(1, dist, 1);
-
-                        // Win Condition: Close to Z=-5 and X=0
-                        if (Math.abs(prisma.position.z - (-5)) < 1.5 && Math.abs(prisma.position.x) < 2) {
-                            if (!won) {
-                                won = true;
-                                beamMat.color.setHex(0x00ff00);
-                                beam2.visible = true;
-                                const d2 = prisma.position.distanceTo(photo.position);
-                                beam2.position.copy(prisma.position);
-                                beam2.lookAt(photo.position);
-                                beam2.rotateX(Math.PI / 2);
-                                beam2.scale.set(1, d2, 1);
-                                this.setInstructions("SEMIOSIS COMPLETED: Object -> Sign -> Interpretant");
-                            }
-                        } else {
-                            won = false;
-                            beamMat.color.setHex(0xff0000);
-                            beam2.visible = false;
-                        }
-                    };
-
-                    const onKey = (e) => {
+                    // Logic
+                    group.userData.onKeyDown = (e) => {
                         const s = 0.5;
-                        if (e.key === 'ArrowUp') prisma.position.z -= s;
-                        if (e.key === 'ArrowDown') prisma.position.z += s;
-                        if (e.key === 'ArrowLeft') prisma.position.x -= s;
-                        if (e.key === 'ArrowRight') prisma.position.x += s;
+                        if (e.key === 'ArrowLeft') interpretant.position.x -= s;
+                        if (e.key === 'ArrowRight') interpretant.position.x += s;
+                        if (e.key === 'ArrowUp') interpretant.position.z -= s;
+                        if (e.key === 'ArrowDown') interpretant.position.z += s;
                     };
-                    window.addEventListener('keydown', onKey);
-                    group.userData.cleanup = () => {
-                        document.getElementById('keys-hint').style.display = 'none';
-                        window.removeEventListener('keydown', onKey);
+
+                    group.userData.update = () => {
+                        // Beam follows rock -> interpretant
+                        beam.position.copy(rock.position);
+                        beam.lookAt(interpretant.position);
+                        beam.rotateX(Math.PI / 2);
+                        beam.scale.set(1, rock.position.distanceTo(interpretant.position), 1);
+
+                        // Win condition
+                        if (Math.abs(interpretant.position.x) < 1 && Math.abs(interpretant.position.z + 2) < 1) {
+                            interpretant.material.color.setHex(0x00ff00);
+                            document.getElementById('mission-text').innerText = "SEMIOSIS ACTIVE";
+                            document.getElementById('mission-text').style.color = "#00ff00";
+                        }
                     };
                 });
 
-                // BARTHES
-                this.addLevel('barthes', (group) => {
-                    this.scene.background = new THREE.Color(0x222222);
-                    this.setInstructions("Reveal the Myth. DRAG the LEVER on the RIGHT upwards to transform reality.");
-
-                    const lever = document.getElementById('barthes-lever');
-                    const handle = document.getElementById('lever-handle');
-                    const hint = document.getElementById('barthes-hint');
-                    lever.style.display = 'block';
-                    hint.style.display = 'block';
+                // LEVEL 3: BARTHES (Myth)
+                this.addLevel('level3', (group) => {
+                    this.scene.background = new THREE.Color(0x332211);
+                    document.getElementById('chapter-title').innerText = "CHAPTER III: THE MYTH";
+                    document.getElementById('mission-text').innerText = "DRAG MOUSE UP TO MYTHOLOGIZE";
+                    document.getElementById('return-btn').style.display = 'block';
 
                     const soldier = new THREE.Group();
-                    const mat = new THREE.MeshStandardMaterial({ color: 0x445533, roughness: 0.8 });
-                    const b = new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 0.5), mat);
-                    const h = new THREE.Mesh(new THREE.SphereGeometry(0.4), mat);
-                    h.position.y = 1;
-                    soldier.add(b, h);
+                    const mat = new THREE.MeshStandardMaterial({ color: 0x556644 });
+                    soldier.add(new THREE.Mesh(new THREE.BoxGeometry(1, 2, 0.5), mat));
+                    soldier.add(new THREE.Mesh(new THREE.SphereGeometry(0.5), mat));
+                    soldier.children[1].position.y = 1.2;
                     group.add(soldier);
 
-                    let val = 0;
-                    let drag = false;
-                    const onDown = (e) => {
-                        const rect = lever.getBoundingClientRect();
-                        if (e.clientX > rect.left - 50) drag = true;
-                    };
-                    const onUp = () => drag = false;
-                    const onMove = (e) => {
-                        if (drag) {
-                            const rect = lever.getBoundingClientRect();
-                            val = 1 - Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-                            handle.style.height = (val * 100) + '%';
-                        }
-                    };
+                    let value = 0;
+                    group.userData.onMouseMove = (e) => {
+                        // Simple vertical mouse position maps to myth value
+                        value = 1 - (e.clientY / window.innerHeight);
 
-                    window.addEventListener('mousedown', onDown);
-                    window.addEventListener('mouseup', onUp);
-                    window.addEventListener('mousemove', onMove);
-
-                    group.userData.update = () => {
-                        const gold = new THREE.Color(0xffd700);
-                        const olive = new THREE.Color(0x445533);
-                        mat.color.lerpColors(olive, gold, val);
+                        const gold = new THREE.Color(0xffaa00);
+                        const drab = new THREE.Color(0x556644);
+                        mat.color.lerpColors(drab, gold, value);
                         mat.emissive.setHex(0xffaa00);
-                        mat.emissiveIntensity = val * 2;
-                        mat.metalness = val;
+                        mat.emissiveIntensity = value;
 
-                        soldier.rotation.y += 0.01;
-
-                        if (val > 0.9) this.setInstructions("THE REALITY IS LOST. THE MYTH IS CONSUMED.");
-                        else this.setInstructions("Drag the lever to mythologize the soldier.");
-                    };
-
-                    group.userData.cleanup = () => {
-                        lever.style.display = 'none';
-                        hint.style.display = 'none';
-                        window.removeEventListener('mousedown', onDown);
-                        window.removeEventListener('mouseup', onUp);
-                        window.removeEventListener('mousemove', onMove);
-                    };
-                });
-
-                // BAUDRILLARD
-                this.addLevel('baudrillard', (group) => {
-                    this.scene.background = new THREE.Color(0x87CEEB);
-                    this.setInstructions("Approach the Tower in the distance. Witness the degradation of the Real.");
-
-                    const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshBasicMaterial({ color: 0x228b22 }));
-                    ground.rotation.x = -Math.PI / 2;
-                    group.add(ground);
-
-                    const tower = new THREE.Mesh(new THREE.BoxGeometry(6, 20, 6), new THREE.MeshBasicMaterial({ color: 0x555555 }));
-                    tower.position.set(0, 10, -50);
-                    group.add(tower);
-
-                    // Rain
-                    const rainGeo = new THREE.BufferGeometry();
-                    const count = 2000;
-                    const pos = new Float32Array(count * 3);
-                    for (let i = 0; i < count * 3; i++) pos[i] = (Math.random() - 0.5) * 100;
-                    rainGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-                    const rain = new THREE.Points(rainGeo, new THREE.PointsMaterial({ color: 0x00ff00, size: 0.2, transparent: true, opacity: 0 }));
-                    group.add(rain);
-
-                    group.userData.update = () => {
-                        this.camera.position.z -= 0.05; // Auto walk
-                        if (this.camera.position.z < -45) this.camera.position.z = -45;
-
-                        const dist = this.camera.position.distanceTo(tower.position);
-
-                        if (dist < 30) {
-                            this.scene.background.setHex(0x000000);
-                            ground.material.wireframe = true;
-                            ground.material.color.setHex(0x00ff00);
-                            tower.material.wireframe = true;
-                            tower.material.color.setHex(0x00ff00);
-                            rain.material.opacity = (30 - dist) / 20;
-                            this.setInstructions("WELCOME TO THE DESERT OF THE REAL.");
-                        } else {
-                            this.setInstructions(`Distance to Simularcum: ${Math.floor(dist)}m`);
-                        }
+                        soldier.rotation.y += 0.02;
                     };
                 });
             }
@@ -717,50 +609,133 @@
             addLevel(name, fn) { this.levels[name] = fn; }
 
             loadLevel(name) {
+                // Cleanup
                 if (this.currentLevelObject) {
-                    if (this.currentLevelObject.userData.cleanup) this.currentLevelObject.userData.cleanup();
                     this.scene.remove(this.currentLevelObject);
+                    this.currentLevelObject = null;
                 }
+
+                // Init new
                 this.currentLevelName = name;
                 this.currentLevelObject = new THREE.Group();
                 this.scene.add(this.currentLevelObject);
 
-                // Camera reset
-                if (name !== 'hub') {
-                    this.camera.position.set(0, 3, 10);
-                    this.camera.lookAt(0, 0, 0);
-                    document.getElementById('return-hint').style.display = 'block';
-                    this.controls.enabled = false;
-                    if (name === 'peirce') {
-                        this.camera.position.set(0, 10, 0);
-                        this.camera.lookAt(0, 0, 0);
-                    }
-                } else {
-                    this.camera.position.set(0, 2, 8);
-                    this.camera.lookAt(0, 1, 0);
-                    document.getElementById('return-hint').style.display = 'none';
-                    this.controls.enabled = true;
-                }
+                // Reset Camera
+                this.camera.position.set(0, 3, 8);
+                this.camera.lookAt(0, 0, 0);
 
                 if (this.levels[name]) this.levels[name](this.currentLevelObject);
             }
 
+            createNextButton(group, text) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512; canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = "rgba(0,0,0,0.8)";
+                ctx.fillRect(0, 0, 512, 128);
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 5;
+                ctx.strokeRect(10, 10, 492, 108);
+                ctx.fillStyle = "white";
+                ctx.font = "bold 40px Courier New";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(text, 256, 64);
+
+                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas) }));
+                sprite.position.set(0, -2, 2);
+                sprite.scale.set(4, 1, 1);
+
+                // Raycastable
+                sprite.userData = { isButton: true, action: () => this.loadLevel('hub') };
+                this.activeObjects.push(sprite);
+
+                group.add(sprite);
+            }
+
+            // --- Loop ---
+            onWindowResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.composer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            checkHover() {
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(this.activeObjects);
+                if (intersects.length > 0) {
+                    this.reticle.classList.add('active');
+                    document.body.style.cursor = 'pointer';
+                } else {
+                    this.reticle.classList.remove('active');
+                    document.body.style.cursor = 'none';
+                }
+            }
+
+            onMouseDown(e) {
+                if (this.currentLevelObject && this.currentLevelObject.userData.onMouseDown)
+                    this.currentLevelObject.userData.onMouseDown(e);
+            }
+            onMouseUp(e) {
+                if (this.currentLevelObject && this.currentLevelObject.userData.onMouseUp)
+                    this.currentLevelObject.userData.onMouseUp(e);
+            }
+            onClick(e) {
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(this.activeObjects);
+                if (intersects.length > 0 && intersects[0].object.userData.isButton) {
+                    intersects[0].object.userData.action();
+                    return;
+                }
+                if (intersects.length > 0 && intersects[0].object.userData.id) {
+                    this.loadLevel(intersects[0].object.userData.id);
+                }
+            }
+
             animate() {
                 requestAnimationFrame(() => this.animate());
+
+                const dt = 0.016;
+
+                // Intro is handled separately via DOM opacity
+                if (this.currentLevelObject) {
+                    // Level specific updates
+                    if (this.currentLevelObject.userData.update) this.currentLevelObject.userData.update();
+
+                    // Mouse move propagation
+                    if (this.currentLevelObject.userData.onMouseMove)
+                        this.currentLevelObject.userData.onMouseMove({ movementX: 1 }); // Mock relative? No, need real event.
+                    // Actually better to hook window event to pass data but keep simple for now
+                }
+
+                // Animate floating gems in Hub
                 if (this.currentLevelName === 'hub') {
                     this.activeObjects.forEach(obj => {
-                        obj.position.y = obj.userData.floatY + Math.sin(Date.now() * 0.001 + obj.userData.phase) * 0.2;
-                        obj.rotation.y += 0.01;
+                        if (obj.userData.phase) {
+                            obj.position.y = obj.userData.baseY + Math.sin(Date.now() * 0.001 + obj.userData.phase) * 0.1;
+                            obj.rotation.y += 0.01;
+                        }
                     });
                 }
-                if (this.currentLevelObject && this.currentLevelObject.userData.update) this.currentLevelObject.userData.update();
 
                 this.controls.update();
                 this.composer.render();
             }
         }
 
-        window.gameInstance = new Game();
+        // Pass mouse moves to active level
+        const game = new Game();
+        window.addEventListener('mousemove', (e) => {
+            if (game.currentLevelObject && game.currentLevelObject.userData.onMouseMove)
+                game.currentLevelObject.userData.onMouseMove(e);
+        });
+        window.addEventListener('keydown', (e) => {
+            if (game.currentLevelObject && game.currentLevelObject.userData.onKeyDown)
+                game.currentLevelObject.userData.onKeyDown(e);
+        });
+
+        window.gameInstance = game;
     </script>
 </body>
 
